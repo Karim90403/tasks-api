@@ -40,4 +40,4 @@ FROM base as local
 
 # Server stage
 FROM base as server
-COPY ./src/. .
+COPY --chown=${UID}:${GID} ./src/ .
