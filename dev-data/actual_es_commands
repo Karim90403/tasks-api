@@ -1,0 +1,127 @@
+PUT construction
+{
+  "mappings": {
+    "properties": {
+      "project_id": { "type": "keyword" },
+      "project_name": { "type": "text" },
+      "foreman_id": { "type": "keyword" },
+      "foreman_name": { "type": "text" },
+      "work_stages": {
+        "type": "nested",
+        "properties": {
+          "stage_id": { "type": "keyword" },
+          "stage_name": { "type": "text" },
+          "work_types": {
+            "type": "nested",
+            "properties": {
+              "work_type_id": { "type": "keyword" },
+              "work_type_name": { "type": "text" },
+              "tasks": {
+                "type": "nested",
+                "properties": {
+                  "task_id": { "type": "keyword" },
+                  "task_name": { "type": "text" },
+                  "task_description": { "type": "text" },
+                  "subtasks": {
+                    "type": "nested",
+                    "properties": {
+                      "subtask_id": { "type": "keyword" },
+                      "subtask_name": { "type": "text" },
+                      "subtask_description": { "type": "text" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "shifts": {
+        "type": "nested",
+        "properties": {
+          "shift_id": { "type": "keyword" },
+          "foreman_id": { "type": "keyword" },
+          "start_time": { "type": "date" },
+          "end_time": { "type": "date" },
+          "status": { "type": "keyword" }
+        }
+      }
+    }
+  }
+}
+
+POST construction/_doc
+{
+  "project_id": "p1",
+  "project_name": "Строительство жилого дома",
+  "foreman_id": "f1",
+  "foreman_name": "Иван Иванов",
+  "work_stages": [
+    {
+      "stage_id": "s1",
+      "stage_name": "Фундамент",
+      "work_types": [
+        {
+          "work_type_id": "wt1",
+          "work_type_name": "Заливка бетона",
+          "tasks": [
+            {
+              "task_id": "t1",
+              "task_name": "Подготовка площадки",
+              "task_description": "Очистка территории перед заливкой бетона",
+              "subtasks": [
+                {
+                  "subtask_id": "st1",
+                  "subtask_name": "Вывоз мусора",
+                  "subtask_description": "Убрать строительный мусор"
+                },
+                {
+                  "subtask_id": "st2",
+                  "subtask_name": "Разметка территории",
+                  "subtask_description": "Разметить границы фундамента"
+                }
+              ]
+            },
+            {
+              "task_id": "t2",
+              "task_name": "Армирование",
+              "task_description": "Установка арматурного каркаса"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stage_id": "s2",
+      "stage_name": "Стены",
+      "work_types": [
+        {
+          "work_type_id": "wt2",
+          "work_type_name": "Кладка кирпича",
+          "tasks": [
+            {
+              "task_id": "t3",
+              "task_name": "Первая линия кладки",
+              "task_description": "Укладка первого ряда кирпичей"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "shifts": [
+    {
+      "shift_id": "sh1",
+      "foreman_id": "f1",
+      "start_time": "2025-08-16T08:00:00",
+      "end_time": "2025-08-16T17:00:00",
+      "status": "closed"
+    },
+    {
+      "shift_id": "sh2",
+      "foreman_id": "f1",
+      "start_time": "2025-08-17T08:00:00",
+      "status": "active"
+    }
+  ]
+}
