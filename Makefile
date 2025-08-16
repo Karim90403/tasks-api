@@ -33,19 +33,17 @@ connect:
 grant-permissions:
 	docker-compose -f docker-compose.yml exec -T -u root vpn-manager-postgres chown postgres:postgres /var/lib/postgresql/data
 
-linter-init:
-	@git submodule init
-	@git submodule update --recursive --remote
+lint:
+	@echo "Start checking ruff..."
+	docker run -it --volume=./src:/src --rm  registry.atb-it.ru/linters/python-lints/ruff:stable ruff --config=/pyproject.toml /src
+	@echo "Stop checking ruff..."
 
-check-linters: linter-init
-	@echo "Start checking isort..."
-	docker run -it --volume=./src:/src --platform=linux/amd64 --rm registry.mathun.team/matrix-hunter/dev/linters/python-lints/all-lints:latest isort --settings-file=/pyproject.toml /src
-	@echo "Stop checking isort..."
+refactor:
+	@echo "Start checking ruff..."
+	docker run -it --volume=./src:/src --rm  registry.atb-it.ru/linters/python-lints/ruff:stable ruff --fix --config=/pyproject.toml /src
+	@echo "Stop checking ruff..."
 
-	@echo "Start checking black..."
-	docker run -it --volume=./src:/src --platform=linux/amd64 --rm registry.mathun.team/matrix-hunter/dev/linters/python-lints/all-lints:latest black --config=/pyproject.toml /src
-	@echo "Stop checking black..."
-
-	@echo "Start checking flake8..."
-	docker run -it --volume=./src:/src --platform=linux/amd64 --rm registry.mathun.team/matrix-hunter/dev/linters/python-lints/all-lints:latest flake8 --config=/.flake8 /src
-	@echo "Stop checking flake8..."
+force-refactor:
+	@echo "Start checking ruff..."
+	docker run -it --volume=./src:/src --rm registry.atb-it.ru/linters/python-lints/ruff:stable ruff --unsafe-fixes --config=/pyproject.toml /src
+	@echo "Stop checking ruff..."

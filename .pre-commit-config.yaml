@@ -1,26 +1,10 @@
 repos:
 -   repo: local
     hooks:
-    -   id: docker-flake8
-        name: flake8
-        description: flake8
-        entry: registry.mathun.team/matrix-hunter/dev/linters/python-lints/all-lints:latest
-        args: ["flake8", "--config=/.flake8"]
-        language: docker_image
-        files: \.(py)$
-
-    -   id: docker-black
-        name: black
-        description: black
-        entry: registry.mathun.team/matrix-hunter/dev/linters/python-lints/all-lints:latest
-        args: ["black", "--config=/pyproject.toml"]
-        language: docker_image
-        files: \.(py)$
-
-    -   id: docker-isort
-        name: isort
-        description: isort
-        entry: registry.mathun.team/matrix-hunter/dev/linters/python-lints/all-lints:latest
-        args: ["isort", "--settings-file=/pyproject.toml"]
+    -   id: docker-ruff
+        name: ruff
+        description: ruff
+        entry: registry.atb-it.ru/linters/python-lints/ruff:latest
+        args: ["ruff", "--config=/pyproject.toml"]
         language: docker_image
         files: \.(py)$
