@@ -1,0 +1,20 @@
+version: "3.7"
+
+networks:
+  mathunt_default:
+    external: true
+
+services:
+  abc_service:
+    build:
+      context: .
+      dockerfile: docker/abc_service/Dockerfile
+      target: server
+    container_name: abc_service
+    platform: ${PLATFORM}
+    env_file:
+      - src/.env
+    networks:
+      - mathunt_default
+    ports:
+      - "8001:8000"
