@@ -1,7 +1,7 @@
 import backoff
 import elasticsearch
 from aiocache import cached
-from elasticsearch import AsyncElasticsearch
+from elasticsearch._async.client import AsyncElasticsearch
 
 from core.environment_config import settings
 from db.elastic.session_manager import elastic_db_manager

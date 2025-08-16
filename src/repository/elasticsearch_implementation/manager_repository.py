@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, Dict, List
 
-from elasticsearch import AsyncElasticsearch
+from elasticsearch._async.client import AsyncElasticsearch
 from fastapi import Depends
 
 from core.environment_config import settings
