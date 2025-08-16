@@ -6,8 +6,8 @@ from api.main import setup_routers
 from common.dependencies.main import setup_dependencies
 from common.exception_handlers.init_handlers import init_handlers
 from common.swagger_ui.tags_metadata import tags_metadata
-from core.logguru_config import init_logging
 from core.cmd_parser import Parser
+from core.logguru_config import init_logging
 from lifespan import lifespan
 
 if __name__ != "__main__":

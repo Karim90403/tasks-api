@@ -1,6 +1,7 @@
+from cmd.base.base_command import BaseCommand
+
 import uvicorn
 
-from cmd.base.base_command import BaseCommand
 from core.environment_config import settings
 
 

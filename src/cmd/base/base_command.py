@@ -1,8 +1,8 @@
 from abc import ABC
 from argparse import ArgumentParser, Namespace
+from cmd.base.abc_command import AbstractCommand
 from typing import List
 
-from cmd.base.abc_command import AbstractCommand
 from core.cmd_parser import Parser
 
 

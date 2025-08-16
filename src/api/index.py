@@ -1,11 +1,13 @@
-from fastapi import APIRouter, status
+from fastapi import FastAPI
 
-router = APIRouter(tags=["test route"])
+from api.v1 import manager, foreman
+
+app = FastAPI(title="Construction API")
+
+app.include_router(manager.router)
+app.include_router(foreman.router)
 
 
-@router.get(
-    "/healthcheck",
-    status_code=status.HTTP_200_OK,
-)
+@app.get("/healthcheck")
 async def healthcheck():
-    return
+    return {"status": "ok"}
