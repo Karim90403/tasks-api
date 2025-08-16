@@ -26,11 +26,13 @@ ENV PATH="${PYTHON_VENV}/bin:${PATH}"
 
 WORKDIR "${SERVICE_WORKDIR}"
 
-COPY ./src/entrypoint.sh /
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT  [ "/entrypoint.sh" ]
+COPY ./src/entrypoint.sh /entrypoint.sh
+RUN chmod 755 /entrypoint.sh && chown ${UID}:${GID} /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 
 EXPOSE 8000
+
+RUN chown ${UID}:${GID} -R ${SERVICE_WORKDIR}
 USER user
 
 # Local stage
