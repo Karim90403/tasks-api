@@ -48,10 +48,18 @@ class ElasticConfig(BaseSettings):
     default_nested_path: str = Field(default="services", env="DEFAULT_NESTED_PATH")
     request_timeout: str = Field(default="10s", env="ELASTIC_REQUEST_TIMEOUT")
 
+
+class JWTConfig(BaseSettings):
+    secret_key: str = Field(default="supersecret", env="JWT_SECRET_KEY")
+    algorithm: str = Field(default="HS256", env="JWT_ALGORITHM")
+    access_token_expire_minutes: int = Field(default=30, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
+    refresh_token_expire_days: int = Field(default=30, env="REFRESH_TOKEN_EXPIRE_DAYS")
+
 class Settings(BaseSettings):
     project: ProjectConfig = ProjectConfig()
     redis: RedisConfig = RedisConfig()
     elasticsearch: ElasticConfig = ElasticConfig()
+    jwt: JWTConfig = JWTConfig()
 
 @lru_cache()
 def get_settings() -> Settings:

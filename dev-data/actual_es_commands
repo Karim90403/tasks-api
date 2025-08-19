@@ -1,16 +1,20 @@
+# Click the Variables button, above, to create your own variables
+
 PUT construction
 {
   "mappings": {
     "properties": {
       "project_id": { "type": "keyword" },
       "project_name": { "type": "text" },
-      "foreman_id": { "type": "keyword" },
+      "foreman_id": { "type": "keyword" }, 
       "foreman_name": { "type": "text" },
+      "password": { "type": "text" },
       "work_stages": {
         "type": "nested",
         "properties": {
           "stage_id": { "type": "keyword" },
           "stage_name": { "type": "text" },
+          "stage_status": { "type": "keyword" },
           "work_types": {
             "type": "nested",
             "properties": {
@@ -22,12 +26,30 @@ PUT construction
                   "task_id": { "type": "keyword" },
                   "task_name": { "type": "text" },
                   "task_description": { "type": "text" },
+                  "task_status": { "type": "keyword" },
+                  "time_intervals": {
+                    "type": "nested",
+                    "properties": {
+                      "start_time": { "type": "date" },
+                      "end_time": { "type": "date" },
+                      "status": { "type": "keyword" }
+                    }
+                  },
                   "subtasks": {
                     "type": "nested",
                     "properties": {
                       "subtask_id": { "type": "keyword" },
                       "subtask_name": { "type": "text" },
-                      "subtask_description": { "type": "text" }
+                      "subtask_status": { "type": "keyword" },
+                      "subtask_description": { "type": "text" },
+                      "time_intervals": {
+                        "type": "nested",
+                        "properties": {
+                          "start_time": { "type": "date" },
+                          "end_time": { "type": "date" },
+                          "status": { "type": "keyword" }
+                        }
+                      }
                     }
                   }
                 }
@@ -35,20 +57,11 @@ PUT construction
             }
           }
         }
-      },
-      "shifts": {
-        "type": "nested",
-        "properties": {
-          "shift_id": { "type": "keyword" },
-          "foreman_id": { "type": "keyword" },
-          "start_time": { "type": "date" },
-          "end_time": { "type": "date" },
-          "status": { "type": "keyword" }
-        }
       }
     }
   }
 }
+
 
 POST construction/_doc
 {
@@ -56,36 +69,68 @@ POST construction/_doc
   "project_name": "Строительство жилого дома",
   "foreman_id": "f1",
   "foreman_name": "Иван Иванов",
+  "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
   "work_stages": [
     {
       "stage_id": "s1",
       "stage_name": "Фундамент",
+      "stage_status": "В работе",
       "work_types": [
         {
           "work_type_id": "wt1",
           "work_type_name": "Заливка бетона",
+          "work_status": "В работе",
           "tasks": [
             {
               "task_id": "t1",
               "task_name": "Подготовка площадки",
               "task_description": "Очистка территории перед заливкой бетона",
+              "task_status": "Заврешено",
               "subtasks": [
                 {
                   "subtask_id": "st1",
                   "subtask_name": "Вывоз мусора",
-                  "subtask_description": "Убрать строительный мусор"
+                  "subtask_status": "Заврешено",
+                  "subtask_description": "Убрать строительный мусор",
+                  "time_intervals": [
+                    {
+                      "start_time": "2025-08-16T08:00:00",
+                      "end_time": "2025-08-16T17:00:00",
+                      "status": "closed"
+                    }
+                  ]
                 },
                 {
                   "subtask_id": "st2",
                   "subtask_name": "Разметка территории",
-                  "subtask_description": "Разметить границы фундамента"
+                  "subtask_status": "Заврешено",
+                  "subtask_description": "Разметить границы фундамента",
+                  "time_intervals": [
+                    {
+                      "start_time": "2025-08-16T08:00:00",
+                      "end_time": "2025-08-16T17:00:00",
+                      "status": "closed"
+                    }
+                  ]
                 }
               ]
             },
             {
               "task_id": "t2",
               "task_name": "Армирование",
-              "task_description": "Установка арматурного каркаса"
+              "task_status": "В работе",
+              "task_description": "Установка арматурного каркаса",
+              "time_intervals": [
+                {
+                  "start_time": "2025-08-16T08:00:00",
+                  "end_time": "2025-08-16T17:00:00",
+                  "status": "closed"
+                },
+                {
+                  "start_time": "2025-08-17T08:00:00",
+                  "status": "active"
+                }
+              ]
             }
           ]
         }
@@ -94,6 +139,7 @@ POST construction/_doc
     {
       "stage_id": "s2",
       "stage_name": "Стены",
+      "stage_status": "",
       "work_types": [
         {
           "work_type_id": "wt2",
@@ -102,26 +148,15 @@ POST construction/_doc
             {
               "task_id": "t3",
               "task_name": "Первая линия кладки",
-              "task_description": "Укладка первого ряда кирпичей"
+              "task_description": "Укладка первого ряда кирпичей",
+              "time_intervals": []
             }
           ]
         }
       ]
     }
-  ],
-  "shifts": [
-    {
-      "shift_id": "sh1",
-      "foreman_id": "f1",
-      "start_time": "2025-08-16T08:00:00",
-      "end_time": "2025-08-16T17:00:00",
-      "status": "closed"
-    },
-    {
-      "shift_id": "sh2",
-      "foreman_id": "f1",
-      "start_time": "2025-08-17T08:00:00",
-      "status": "active"
-    }
   ]
 }
+
+DELETE construction
+GET construction/_refresh
