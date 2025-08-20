@@ -1,6 +1,9 @@
 from functools import lru_cache
+from http.client import HTTPException
 
 from elasticsearch import Elasticsearch
+
+from common.exceptions.authorisation import AuthorisationException
 from core.environment_config import settings
 from db.elastic.connection import get_elastic_client
 from repository.abc.user_repository import ABCUserRepository
@@ -29,6 +32,20 @@ class UserRepository(ABCUserRepository):
             return None
         source = hits[0]["_source"]
         return UserInDB(**source, id=hits[0]["_id"])
+
+    async def get_user_by_id(self, user_id: str) -> UserInDB | None:
+        query = {"query": {"term": {"id": user_id}}}
+        resp = await self.client.search(
+            index=self.index,
+            size=100,
+            body=query
+        )
+        hits = resp.get("hits", {}).get("hits", [])
+        if not hits:
+            raise AuthorisationException(msg="User not found")
+
+        source = hits[0]["_source"]
+        return UserInDB(**source, id=user_id)
 
 @lru_cache
 def get_user_elastic_repository(
