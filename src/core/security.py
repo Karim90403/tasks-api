@@ -52,6 +52,8 @@ def try_decode_access(token: str) -> Tuple[dict, Optional[Exception]]:
         if payload.get("type") != "access":
             raise jwt.exceptions.InvalidTokenError("Invalid token type")
         return payload, None
+    except jwt.exceptions.InvalidTokenError as e:
+        raise e
     except Exception as e:
         return {}, e
 

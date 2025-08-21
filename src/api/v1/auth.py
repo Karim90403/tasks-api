@@ -11,14 +11,14 @@ async def register(user: UserCreate, service: AuthService = Depends(get_auth_ser
     try:
         return await service.register_user(user)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 @router.post("/login", response_model=Token)
 async def login(user: UserCreate, service: AuthService = Depends(get_auth_service)):
     try:
         return await service.authenticate_user(user.email, user.password)
     except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail=str(e)) from e
 
 
 @router.post("/loginform", response_model=Token)
@@ -33,7 +33,7 @@ async def login_form(
     try:
         return await service.authenticate_user(username, password)
     except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail=str(e)) from e
 
 @router.post("/refresh", response_model=Token)
 async def refresh(body: RefreshRequest, service: AuthService = Depends(get_auth_service)):
