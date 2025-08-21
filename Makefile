@@ -45,5 +45,5 @@ refactor:
 
 force-refactor:
 	@echo "Start checking ruff..."
-	docker run -it --volume=./src:/src --rm registry.atb-it.ru/linters/python-lints/ruff:stable ruff --unsafe-fixes --config=/pyproject.toml /src
+	docker run -it --volume=./src:/src --rm registry.atb-it.ru/linters/python-lints/ruff:stable ruff --unsafe-fixes --fix --config=/pyproject.toml /src
 	@echo "Stop checking ruff..."
