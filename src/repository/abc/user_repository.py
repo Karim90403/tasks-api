@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from schemas.user import UserInDB
 
@@ -9,9 +10,9 @@ class ABCUserRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_user_by_email(self, email: str) -> UserInDB | None:
+    async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
        ...
 
     @abstractmethod
-    async def get_user_by_id(self, id: str) -> UserInDB | None:
+    async def get_user_by_id(self, user_id: str) -> Optional[UserInDB]:
         ...

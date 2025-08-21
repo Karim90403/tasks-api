@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from api.v1 import foreman, manager, auth
+from api.v1 import auth, foreman, manager
 
 v1_router = APIRouter(prefix="/v1")
 

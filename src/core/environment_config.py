@@ -44,8 +44,8 @@ class ElasticConfig(BaseSettings):
     url: str = Field(default="http://search_elasticsearch:9200", env="ELASTIC_URL")
     login: Optional[str] = Field(default=None, env="ELASTIC_LOGIN")
     password: Optional[str] = Field(default=None, env="ELASTIC_PASSWORD")
-    index: str = Field(default="hosts", env="ELASTIC_INDEX")
-    default_nested_path: str = Field(default="services", env="DEFAULT_NESTED_PATH")
+    index: str = Field(default="construction", env="ELASTIC_INDEX")
+    users_index: str = Field(default="users", env="ELASTIC_USERS_INDEX")
     request_timeout: str = Field(default="10s", env="ELASTIC_REQUEST_TIMEOUT")
 
 
@@ -54,6 +54,7 @@ class JWTConfig(BaseSettings):
     algorithm: str = Field(default="HS256", env="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=30, env="REFRESH_TOKEN_EXPIRE_DAYS")
+    access_token_proactive_refresh_seconds: int = Field(default=120, env="ACCESS_TOKEN_PROACTIVE_REFRESH_SECONDS")
 
 class Settings(BaseSettings):
     project: ProjectConfig = ProjectConfig()

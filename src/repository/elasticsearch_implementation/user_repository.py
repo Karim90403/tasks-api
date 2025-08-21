@@ -1,15 +1,15 @@
 from functools import lru_cache
-from http.client import HTTPException
+from typing import Optional
 
-from elasticsearch import Elasticsearch
+from elasticsearch._async.client import AsyncElasticsearch
+from fastapi import Depends
+from loguru import logger
 
-from common.exceptions.authorisation import AuthorisationException
 from core.environment_config import settings
 from db.elastic.connection import get_elastic_client
 from repository.abc.user_repository import ABCUserRepository
 from schemas.user import UserInDB
-from fastapi import Depends
-from elasticsearch._async.client import AsyncElasticsearch
+
 
 class UserRepository(ABCUserRepository):
     def __init__(self, client: AsyncElasticsearch, index: str, timeout: int = 30):
@@ -18,9 +18,11 @@ class UserRepository(ABCUserRepository):
         self.timeout = timeout
 
     async def create_user(self, user: UserInDB) -> None:
-        await self.client.index(index=self.index, id=user.id, document=user.dict())
+        response = await self.client.index(index=self.index, id=user.id, document=user.dict())
+        logger.info(f"Document created: {response['result']}")
+        logger.info(f"Document ID: {response['_id']}")
 
-    async def get_user_by_email(self, email: str) -> UserInDB | None:
+    async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
         query = {"query": {"term": {"email": email}}}
         resp = await self.client.search(
             index=self.index,
@@ -31,26 +33,22 @@ class UserRepository(ABCUserRepository):
         if not hits:
             return None
         source = hits[0]["_source"]
-        return UserInDB(**source, id=hits[0]["_id"])
+        return UserInDB(**source)
 
-    async def get_user_by_id(self, user_id: str) -> UserInDB | None:
-        query = {"query": {"term": {"id": user_id}}}
-        resp = await self.client.search(
+    async def get_user_by_id(self, user_id: str) -> Optional[UserInDB]:
+        doc = await self.client.get(
             index=self.index,
-            size=100,
-            body=query
+            ignore=[404],
+            id=user_id
         )
-        hits = resp.get("hits", {}).get("hits", [])
-        if not hits:
-            raise AuthorisationException(msg="User not found")
-
-        source = hits[0]["_source"]
-        return UserInDB(**source, id=user_id)
+        if not doc or not doc.get("found"):
+            return None
+        return UserInDB(**doc["_source"])
 
 @lru_cache
 def get_user_elastic_repository(
     client: AsyncElasticsearch = Depends(get_elastic_client),
 ) -> ABCUserRepository:
     return UserRepository(
-        client, settings.elasticsearch.index, settings.elasticsearch.request_timeout
+        client, settings.elasticsearch.users_index, settings.elasticsearch.request_timeout
     )

@@ -14,13 +14,14 @@ logger_request_id: ContextVar[uuid] = ContextVar("request_id")
 async def logging_dependency(request: Request):
     request_id = request.headers.get("X-Request-Id", uuid.uuid4())
     logger_request_id.set(request_id)
-    local_logger = logger.bind(request_headers=dict(request.headers), request_body=await request.body())
-    local_logger.info(
-        {
-            "method": request.method,
-            "url": request.url.path,
-        }
-    )
+    if "application/json" in request.headers.get("content-type", ""):
+        local_logger = logger.bind(request_headers=dict(request.headers), request_body=await request.body())
+        local_logger.info(
+            {
+                "method": request.method,
+                "url": request.url.path,
+            }
+        )
 
 
 def format_record(record: dict) -> str:
