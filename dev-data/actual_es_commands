@@ -67,9 +67,7 @@ POST construction/_doc
 {
   "project_id": "p1",
   "project_name": "Строительство жилого дома",
-  "foreman_id": "f1",
-  "foreman_name": "Иван Иванов",
-  "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+  "foreman_id": "0d2d6c94-377a-46c8-9051-842bb1330bcc",
   "work_stages": [
     {
       "stage_id": "s1",
@@ -160,3 +158,43 @@ POST construction/_doc
 
 DELETE construction
 GET construction/_refresh
+
+
+PUT users
+{
+  "settings": {
+    "analysis": {
+      "normalizer": {
+        "lowercase_norm": {
+          "type": "custom",
+          "filter": ["lowercase"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "email": {
+        "type": "keyword",
+        "normalizer": "lowercase_norm"
+      },
+      "hashed_password": { "type": "keyword" },
+      "role": { "type": "keyword" },
+      "is_active": { "type": "boolean" },
+      "created_at": { "type": "date" }
+    }
+  }
+}
+
+GET users/_refresh
+GET users/_search
+DELETE users
+DELETE construction
+GET construction/_search
+
+POST users/_update/0d2d6c94-377a-46c8-9051-842bb1330bcc
+{
+  "doc": {
+    "role": "root"
+  }
+}
