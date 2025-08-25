@@ -6,9 +6,7 @@ PUT construction
     "properties": {
       "project_id": { "type": "keyword" },
       "project_name": { "type": "text" },
-      "foreman_id": { "type": "keyword" }, 
-      "foreman_name": { "type": "text" },
-      "password": { "type": "text" },
+      "foreman_id": { "type": "keyword" },
       "work_stages": {
         "type": "nested",
         "properties": {

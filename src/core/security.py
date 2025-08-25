@@ -53,6 +53,8 @@ def try_decode_access(token: str) -> Tuple[dict, Optional[Exception]]:
             raise jwt.exceptions.InvalidTokenError("Invalid token type")
         else:
             return payload, None
+    except jwt.exceptions.ExpiredSignatureError as e:
+        raise jwt.exceptions.InvalidTokenError("Invalid token type") from e
     except jwt.exceptions.InvalidTokenError:
         raise
     except Exception as e:

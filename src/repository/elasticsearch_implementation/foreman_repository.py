@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any, Dict, List
 
@@ -20,7 +21,8 @@ class ElasticForemanRepository(ABCForemanRepository):
             index=self.index,
             size=100,
             query={"term": {"foreman_id": foreman_id}},
-            _source=["project_id", "project_name"]
+            _source=["project_id", "project_name"],
+            request_timeout=self.timeout,
         )
         return [hit["_source"] for hit in resp["hits"]["hits"]]
 
@@ -29,7 +31,8 @@ class ElasticForemanRepository(ABCForemanRepository):
             index=self.index,
             size=100,
             query={"term": {"foreman_id": foreman_id}},
-            _source=["work_stages.work_types.tasks"]
+            _source=["work_stages.work_types.tasks"],
+            request_timeout=self.timeout,
         )
         results = []
         for hit in resp["hits"]["hits"]:
@@ -39,6 +42,248 @@ class ElasticForemanRepository(ABCForemanRepository):
                     for task in wt.get("tasks", []):
                         results.append(task)
         return results
+
+    async def start_shift(self, foreman_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        body = {
+            "query": {
+                "match": {"foreman_id": foreman_id}
+            },
+            "script": {
+                "source": """
+                    boolean updated = false;
+
+                    if (ctx._source.work_stages != null) {
+                        for (stage in ctx._source.work_stages) {
+                            if (stage.work_types != null) {
+                                for (wt in stage.work_types) {
+                                    if (wt.tasks != null) {
+                                        for (task in wt.tasks) {
+                                            // Обработка задач
+                                            if (params.task_ids.contains(task.task_id)) {
+                                                if (task.time_intervals == null) {
+                                                    task.time_intervals = [];
+                                                }
+                                                // Проверяем, есть ли активный интервал
+                                                boolean hasActiveInterval = false;
+                                                if (!task.time_intervals.isEmpty()) {
+                                                    def lastInterval = task.time_intervals.get(task.time_intervals.size() - 1);
+                                                    if (lastInterval.end_time == null) {
+                                                        hasActiveInterval = true;
+                                                    }
+                                                }
+                                                if (!hasActiveInterval) {
+                                                    def newInterval = [
+                                                        'start_time': params.now,
+                                                        'end_time': null,
+                                                        'status': 'active'
+                                                    ];
+                                                    task.time_intervals.add(newInterval);
+                                                    updated = true;
+                                                }
+                                            }
+
+                                            // Обработка подзадач
+                                            if (task.subtasks != null && !task.subtasks.isEmpty()) {
+                                                for (sub in task.subtasks) {
+                                                    if (params.subtask_ids.contains(sub.subtask_id)) {
+                                                        if (sub.time_intervals == null) {
+                                                            sub.time_intervals = [];
+                                                        }
+                                                        // Проверяем, есть ли активный интервал
+                                                        boolean hasActiveSubInterval = false;
+                                                        if (!sub.time_intervals.isEmpty()) {
+                                                            def lastSubInterval = sub.time_intervals.get(sub.time_intervals.size() - 1);
+                                                            if (lastSubInterval.end_time == null) {
+                                                                hasActiveSubInterval = true;
+                                                            }
+                                                        }
+                                                        if (!hasActiveSubInterval) {
+                                                            def newSubInterval = [
+                                                                'start_time': params.now,
+                                                                'end_time': null,
+                                                                'status': 'active'
+                                                            ];
+                                                            sub.time_intervals.add(newSubInterval);
+                                                            updated = true;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (!updated) {
+                        ctx.op = 'noop';
+                    }
+                """,
+                "params": {"task_ids": task_ids, "subtask_ids": subtask_ids, "now": now},
+                "lang": "painless"
+            }
+        }
+
+        try:
+            await self.client.update_by_query(
+                index=self.index,
+                body=body,
+                refresh=True
+            )
+        except Exception as e:
+            print(f"Elasticsearch error: {e}")
+            raise
+
+    async def stop_shift(self, foreman_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        body = {
+            "query": {
+                "match": {"foreman_id": foreman_id}
+            },
+            "script": {
+                "source": """
+                    boolean updated = false;
+
+                    if (ctx._source.work_stages != null) {
+                        for (stage in ctx._source.work_stages) {
+                            if (stage.work_types != null) {
+                                for (wt in stage.work_types) {
+                                    if (wt.tasks != null) {
+                                        for (task in wt.tasks) {
+                                            // Обработка задач
+                                            if (params.task_ids.contains(task.task_id)) {
+                                                if (task.time_intervals != null && !task.time_intervals.isEmpty()) {
+                                                    def lastTaskInterval = task.time_intervals.get(task.time_intervals.size() - 1);
+                                                    if (lastTaskInterval.end_time == null) {
+                                                        lastTaskInterval.end_time = params.now;
+                                                        lastTaskInterval.status = 'closed';
+                                                        updated = true;
+                                                    }
+                                                }
+                                            }
+
+                                            // Обработка подзадач
+                                            if (task.subtasks != null && !task.subtasks.isEmpty()) {
+                                                for (sub in task.subtasks) {
+                                                    if (params.subtask_ids.contains(sub.subtask_id)) {
+                                                        if (sub.time_intervals != null && !sub.time_intervals.isEmpty()) {
+                                                            def lastSubInterval = sub.time_intervals.get(sub.time_intervals.size() - 1);
+                                                            if (lastSubInterval.end_time == null) {
+                                                                lastSubInterval.end_time = params.now;
+                                                                lastSubInterval.status = 'closed';
+                                                                updated = true;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (!updated) {
+                        ctx.op = 'noop';
+                    }
+                """,
+                "params": {"task_ids": task_ids, "subtask_ids": subtask_ids, "now": now},
+                "lang": "painless"
+            }
+        }
+
+        try:
+            await self.client.update_by_query(
+                index=self.index,
+                body=body,
+                refresh=True
+            )
+        except Exception as e:
+            print(f"Elasticsearch error: {e}")
+            raise
+
+    async def get_shift_history(self, foreman_id: str) -> List[Dict[str, Any]]:
+        resp = await self.client.search(
+            index=self.index,
+            size=50,
+            query={"match": {"foreman_id": foreman_id}},
+            _source=[
+                "project_id",
+                "project_name",
+                "work_stages.work_types.tasks.task_id",
+                "work_stages.work_types.tasks.task_name",
+                "work_stages.work_types.tasks.time_intervals",
+                "work_stages.work_types.tasks.subtasks.subtask_id",
+                "work_stages.work_types.tasks.subtasks.subtask_name",
+                "work_stages.work_types.tasks.subtasks.time_intervals",
+            ],
+        )
+        results: List[Dict[str, Any]] = []
+        for hit in resp["hits"]["hits"]:
+            src = hit["_source"]
+            project = {"project_id": src.get("project_id"), "project_name": src.get("project_name")}
+            ws = src.get("work_stages", [])
+            for stage in ws:
+                for wt in stage.get("work_types", []):
+                    for task in wt.get("tasks", []):
+                        # интервалы задач
+                        for ti in task.get("time_intervals", []):
+                            results.append({
+                                "type": "task",
+                                "project_id": project["project_id"],
+                                "project_name": project["project_name"],
+                                "task_id": task.get("task_id"),
+                                "task_name": task.get("task_name"),
+                                "start_time": ti.get("start_time"),
+                                "end_time": ti.get("end_time"),
+                                "status": ti.get("status"),
+                            })
+                        # интервалы подзадач
+                        for sub in task.get("subtasks", []):
+                            for ti in sub.get("time_intervals", []):
+                                results.append({
+                                    "type": "subtask",
+                                    "project_id": project["project_id"],
+                                    "project_name": project["project_name"],
+                                    "task_id": task.get("task_id"),
+                                    "task_name": task.get("task_name"),
+                                    "subtask_id": sub.get("subtask_id"),
+                                    "subtask_name": sub.get("subtask_name"),
+                                    "start_time": ti.get("start_time"),
+                                    "end_time": ti.get("end_time"),
+                                    "status": ti.get("status"),
+                                })
+        # необязательно, но удобно: сортировка по start_time
+        results.sort(key=lambda x: (x.get("start_time") or ""))
+        return results
+
+    async def get_shift_status(self, foreman_id: str) -> str:
+        resp = await self.client.search(
+            index=self.index,
+            size=1,
+            query={"match": {"foreman_id": foreman_id}},
+            _source=[
+                "work_stages.work_types.tasks.time_intervals",
+                "work_stages.work_types.tasks.subtasks.time_intervals",
+            ],
+        )
+
+        for hit in resp["hits"]["hits"]:
+            ws = hit["_source"].get("work_stages", [])
+            for stage in ws:
+                for wt in stage.get("work_types", []):
+                    for task in wt.get("tasks", []):
+                        for ti in task.get("time_intervals", []):
+                            if ti.get("end_time") in (None, "") or ti.get("status") == "active":
+                                return "working"
+                        for sub in task.get("subtasks", []):
+                            for ti in sub.get("time_intervals", []):
+                                if ti.get("end_time") in (None, "") or ti.get("status") == "active":
+                                    return "working"
+        return "not_working"
 
 
 @lru_cache

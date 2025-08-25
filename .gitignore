@@ -139,6 +139,7 @@ README.pdf
 docker/.DS_Store
 kubernetes/.DS_Store
 /kafka/
+.DS_Store
 
 # temporary
 docker-compose.yml

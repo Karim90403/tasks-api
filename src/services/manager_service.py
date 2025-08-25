@@ -16,6 +16,9 @@ class ManagerService:
     async def list_tasks(self) -> List[Dict[str, Any]]:
         return await self.repo.get_tasks()
 
+    async def shift_history(self) -> List[Dict[str, Any]]:
+        return await self.repo.get_shift_history()
+
 
 def get_manager_service(
     repo: ABCManagerRepository = Depends(get_manager_elastic_repository),

@@ -23,3 +23,11 @@ async def get_tasks(
     ):
     if current_user.role == "root":
         return await service.list_tasks()
+
+@router.get("/shifts", status_code=status.HTTP_200_OK)
+async def get_all_shifts(
+        service: ManagerService = Depends(get_manager_service),
+        current_user: UserInDB = Depends(get_current_user),
+    ):
+    if current_user.role == "root":
+        return await service.shift_history()
