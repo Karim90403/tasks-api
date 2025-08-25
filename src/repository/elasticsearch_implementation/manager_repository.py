@@ -7,9 +7,10 @@ from fastapi import Depends
 from core.environment_config import settings
 from db.elastic.connection import get_elastic_client
 from repository.abc.manager_repository import ABCManagerRepository
+from repository.base.elastic_repository import BaseElasticRepository
 
 
-class ElasticManagerRepository(ABCManagerRepository):
+class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
     def __init__(self, client: AsyncElasticsearch, index: str, timeout: int = 30):
         self.client = client
         self.index = index
@@ -27,40 +28,32 @@ class ElasticManagerRepository(ABCManagerRepository):
         resp = await self.client.search(
             index=self.index,
             size=100,
-            _source=["work_stages.work_types.tasks"]
+            _source=["work_stages"]
         )
         results = []
         for hit in resp["hits"]["hits"]:
             ws = hit["_source"].get("work_stages", [])
             for stage in ws:
-                for wt in stage.get("work_types", []):
-                    for task in wt.get("tasks", []):
-                        results.append(task)
+                results.append(stage)
         return results
+
 
     async def get_shift_history(self) -> List[Dict[str, Any]]:
         resp = await self.client.search(
             index=self.index,
             size=100,
-            _source=["foreman_id", "foreman_email", "work_stages.work_types.tasks.subtasks.time_intervals"]
+            _source=[
+                "project_id",
+                "project_name",
+                "work_stages.work_types.tasks.task_id",
+                "work_stages.work_types.tasks.task_name",
+                "work_stages.work_types.tasks.time_intervals",
+                "work_stages.work_types.tasks.subtasks.subtask_id",
+                "work_stages.work_types.tasks.subtasks.subtask_name",
+                "work_stages.work_types.tasks.subtasks.time_intervals",
+            ],
         )
-        results = []
-        for hit in resp["hits"]["hits"]:
-            foreman = {
-                "foreman_id": hit["_source"]["foreman_id"],
-                "foreman_email": hit["_source"]["foreman_email"],
-                "shifts": []
-            }
-            ws = hit["_source"].get("work_stages", [])
-            for stage in ws:
-                for wt in stage.get("work_types", []):
-                    for task in wt.get("tasks", []):
-                        foreman["shifts"].extend(task.get("time_intervals", []))
-                        for sub in task.get("subtasks", []):
-                            foreman["shifts"].extend(sub.get("time_intervals", []))
-            results.append(foreman)
-
-        return results
+        return self.parse_shift_history(resp["hits"]["hits"])
 
 @lru_cache
 def get_manager_elastic_repository(

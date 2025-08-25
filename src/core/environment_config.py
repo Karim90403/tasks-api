@@ -46,7 +46,7 @@ class ElasticConfig(BaseSettings):
     password: Optional[str] = Field(default=None, env="ELASTIC_PASSWORD")
     index: str = Field(default="construction", env="ELASTIC_INDEX")
     users_index: str = Field(default="users", env="ELASTIC_USERS_INDEX")
-    request_timeout: str = Field(default="10s", env="ELASTIC_REQUEST_TIMEOUT")
+    request_timeout: int = Field(default=10, env="ELASTIC_REQUEST_TIMEOUT")
 
 
 class JWTConfig(BaseSettings):

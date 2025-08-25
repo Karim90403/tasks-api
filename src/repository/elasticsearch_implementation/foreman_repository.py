@@ -8,9 +8,10 @@ from fastapi import Depends
 from core.environment_config import settings
 from db.elastic.connection import get_elastic_client
 from repository.abc.foreman_repository import ABCForemanRepository
+from repository.base.elastic_repository import BaseElasticRepository
 
 
-class ElasticForemanRepository(ABCForemanRepository):
+class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
     def __init__(self, client: AsyncElasticsearch, index: str, timeout: int = 30):
         self.client = client
         self.index = index
@@ -31,16 +32,14 @@ class ElasticForemanRepository(ABCForemanRepository):
             index=self.index,
             size=100,
             query={"term": {"foreman_id": foreman_id}},
-            _source=["work_stages.work_types.tasks"],
+            _source=["work_stages"],
             request_timeout=self.timeout,
         )
         results = []
         for hit in resp["hits"]["hits"]:
             ws = hit["_source"].get("work_stages", [])
             for stage in ws:
-                for wt in stage.get("work_types", []):
-                    for task in wt.get("tasks", []):
-                        results.append(task)
+                results.append(stage)
         return results
 
     async def start_shift(self, foreman_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
@@ -221,44 +220,8 @@ class ElasticForemanRepository(ABCForemanRepository):
                 "work_stages.work_types.tasks.subtasks.time_intervals",
             ],
         )
-        results: List[Dict[str, Any]] = []
-        for hit in resp["hits"]["hits"]:
-            src = hit["_source"]
-            project = {"project_id": src.get("project_id"), "project_name": src.get("project_name")}
-            ws = src.get("work_stages", [])
-            for stage in ws:
-                for wt in stage.get("work_types", []):
-                    for task in wt.get("tasks", []):
-                        # интервалы задач
-                        for ti in task.get("time_intervals", []):
-                            results.append({
-                                "type": "task",
-                                "project_id": project["project_id"],
-                                "project_name": project["project_name"],
-                                "task_id": task.get("task_id"),
-                                "task_name": task.get("task_name"),
-                                "start_time": ti.get("start_time"),
-                                "end_time": ti.get("end_time"),
-                                "status": ti.get("status"),
-                            })
-                        # интервалы подзадач
-                        for sub in task.get("subtasks", []):
-                            for ti in sub.get("time_intervals", []):
-                                results.append({
-                                    "type": "subtask",
-                                    "project_id": project["project_id"],
-                                    "project_name": project["project_name"],
-                                    "task_id": task.get("task_id"),
-                                    "task_name": task.get("task_name"),
-                                    "subtask_id": sub.get("subtask_id"),
-                                    "subtask_name": sub.get("subtask_name"),
-                                    "start_time": ti.get("start_time"),
-                                    "end_time": ti.get("end_time"),
-                                    "status": ti.get("status"),
-                                })
-        # необязательно, но удобно: сортировка по start_time
-        results.sort(key=lambda x: (x.get("start_time") or ""))
-        return results
+
+        return self.parse_shift_history(resp["hits"]["hits"])
 
     async def get_shift_status(self, foreman_id: str) -> str:
         resp = await self.client.search(
