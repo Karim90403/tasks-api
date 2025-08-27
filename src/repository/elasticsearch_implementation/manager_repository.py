@@ -45,12 +45,12 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             _source=[
                 "project_id",
                 "project_name",
-                "work_stages.work_types.tasks.task_id",
-                "work_stages.work_types.tasks.task_name",
-                "work_stages.work_types.tasks.time_intervals",
-                "work_stages.work_types.tasks.subtasks.subtask_id",
-                "work_stages.work_types.tasks.subtasks.subtask_name",
-                "work_stages.work_types.tasks.subtasks.time_intervals",
+                "work_stages.tasks.task_id",
+                "work_stages.tasks.task_name",
+                "work_stages.tasks.time_intervals",
+                "work_stages.tasks.subtasks.subtask_id",
+                "work_stages.tasks.subtasks.subtask_name",
+                "work_stages.tasks.subtasks.time_intervals",
             ],
         )
         return self.parse_shift_history(resp["hits"]["hits"])

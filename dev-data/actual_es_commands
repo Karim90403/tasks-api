@@ -13,18 +13,28 @@ PUT construction
           "stage_id": { "type": "keyword" },
           "stage_name": { "type": "text" },
           "stage_status": { "type": "keyword" },
-          "work_types": {
+          "tasks": {
             "type": "nested",
             "properties": {
-              "work_type_id": { "type": "keyword" },
-              "work_type_name": { "type": "text" },
-              "tasks": {
+              "task_id": { "type": "keyword" },
+              "task_name": { "type": "text" },
+              "task_description": { "type": "text" },
+              "task_status": { "type": "keyword" },
+              "time_intervals": {
                 "type": "nested",
                 "properties": {
-                  "task_id": { "type": "keyword" },
-                  "task_name": { "type": "text" },
-                  "task_description": { "type": "text" },
-                  "task_status": { "type": "keyword" },
+                  "start_time": { "type": "date" },
+                  "end_time": { "type": "date" },
+                  "status": { "type": "keyword" }
+                }
+              },
+              "subtasks": {
+                "type": "nested",
+                "properties": {
+                  "subtask_id": { "type": "keyword" },
+                  "subtask_name": { "type": "text" },
+                  "subtask_status": { "type": "keyword" },
+                  "subtask_description": { "type": "text" },
                   "time_intervals": {
                     "type": "nested",
                     "properties": {
@@ -33,39 +43,22 @@ PUT construction
                       "status": { "type": "keyword" }
                     }
                   },
-                  "subtasks": {
+                  "assignees": { "type": "keyword" },
+                  "deadline": { "type": "date" },
+                  "plannedQty": { "type": "float" },
+                  "actualQty": { "type": "float" },
+                  "machine": {
+                    "type": "object",
+                    "properties": {
+                      "hours": { "type": "float" },
+                      "units": { "type": "float" }
+                    }
+                  },
+                  "reportLinks": {
                     "type": "nested",
                     "properties": {
-                      "subtask_id": { "type": "keyword" },
-                      "subtask_name": { "type": "text" },
-                      "subtask_status": { "type": "keyword" },
-                      "subtask_description": { "type": "text" },
-                      "time_intervals": {
-                        "type": "nested",
-                        "properties": {
-                          "start_time": { "type": "date" },
-                          "end_time": { "type": "date" },
-                          "status": { "type": "keyword" }
-                        }
-                      },
-                      "assignees": { "type": "keyword" },
-                      "deadline": { "type": "date" },
-                      "plannedQty": { "type": "float" },
-                      "actualQty": { "type": "float" },
-                      "machine": {
-                        "type": "object",
-                        "properties": {
-                          "hours": { "type": "float" },
-                          "units": { "type": "float" }
-                        }
-                      },
-                      "reportLinks": {
-                        "type": "nested",
-                        "properties": {
-                          "title": { "type": "text" },
-                          "href": { "type": "keyword" }
-                        }
-                      }
+                      "title": { "type": "text" },
+                      "href": { "type": "keyword" }
                     }
                   }
                 }
@@ -91,82 +84,75 @@ POST construction/_doc
       "stage_id": "s1",
       "stage_name": "Фундамент",
       "stage_status": "В работе",
-      "work_types": [
+      "tasks": [
         {
-          "work_type_id": "wt1",
-          "work_type_name": "Заливка бетона",
-          "work_status": "В работе",
-          "tasks": [
+          "task_id": "t1",
+          "task_name": "Подготовка площадки",
+          "task_description": "Очистка территории перед заливкой бетона",
+          "task_status": "Завершено",
+          "subtasks": [
             {
-              "task_id": "t1",
-              "task_name": "Подготовка площадки",
-              "task_description": "Очистка территории перед заливкой бетона",
-              "task_status": "Завершено",
-              "subtasks": [
-                {
-                  "subtask_id": "st1",
-                  "subtask_name": "Вывоз мусора",
-                  "subtask_status": "Завершено",
-                  "subtask_description": "Убрать строительный мусор",
-                  "assignees": ["worker1", "worker2"],
-                  "deadline": "2025-08-20",
-                  "plannedQty": 10,
-                  "actualQty": 12,
-                  "machine": {
-                    "hours": 5,
-                    "units": 2
-                  },
-                  "reportLinks": [
-                    { "title": "Фото отчёт", "href": "http://example.com/report1" }
-                  ],
-                  "time_intervals": [
-                    {
-                      "start_time": "2025-08-16T08:00:00",
-                      "end_time": "2025-08-16T17:00:00",
-                      "status": "closed"
-                    }
-                  ]
-                },
-                {
-                  "subtask_id": "st2",
-                  "subtask_name": "Разметка территории",
-                  "subtask_status": "Завершено",
-                  "subtask_description": "Разметить границы фундамента",
-                  "assignees": ["worker3"],
-                  "deadline": "2025-08-18",
-                  "plannedQty": 5,
-                  "actualQty": 5,
-                  "machine": {
-                    "hours": 5,
-                    "units": 2
-                  },
-                  "reportLinks": [],
-                  "time_intervals": [
-                    {
-                      "start_time": "2025-08-16T08:00:00",
-                      "end_time": "2025-08-16T17:00:00",
-                      "status": "closed"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "task_id": "t2",
-              "task_name": "Армирование",
-              "task_status": "В работе",
-              "task_description": "Установка арматурного каркаса",
+              "subtask_id": "st1",
+              "subtask_name": "Вывоз мусора",
+              "subtask_status": "Завершено",
+              "subtask_description": "Убрать строительный мусор",
+              "assignees": ["worker1", "worker2"],
+              "deadline": "2025-08-20",
+              "plannedQty": 10,
+              "actualQty": 12,
+              "machine": {
+                "hours": 5,
+                "units": 2
+              },
+              "reportLinks": [
+                { "title": "Фото отчёт", "href": "http://example.com/report1" }
+              ],
               "time_intervals": [
                 {
                   "start_time": "2025-08-16T08:00:00",
                   "end_time": "2025-08-16T17:00:00",
                   "status": "closed"
-                },
-                {
-                  "start_time": "2025-08-17T08:00:00",
-                  "status": "active"
                 }
               ]
+            },
+            {
+              "subtask_id": "st2",
+              "subtask_name": "Разметка территории",
+              "subtask_status": "Завершено",
+              "subtask_description": "Разметить границы фундамента",
+              "assignees": ["worker3"],
+              "deadline": "2025-08-18",
+              "plannedQty": 5,
+              "actualQty": 5,
+              "machine": {
+                "hours": 5,
+                "units": 2
+              },
+              "reportLinks": [],
+              "time_intervals": [
+                {
+                  "start_time": "2025-08-16T08:00:00",
+                  "end_time": "2025-08-16T17:00:00",
+                  "status": "closed"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "task_id": "t2",
+          "task_name": "Армирование",
+          "task_status": "В работе",
+          "task_description": "Установка арматурного каркаса",
+          "time_intervals": [
+            {
+              "start_time": "2025-08-16T08:00:00",
+              "end_time": "2025-08-16T17:00:00",
+              "status": "closed"
+            },
+            {
+              "start_time": "2025-08-17T08:00:00",
+              "status": "active"
             }
           ]
         }
@@ -176,18 +162,12 @@ POST construction/_doc
       "stage_id": "s2",
       "stage_name": "Стены",
       "stage_status": "",
-      "work_types": [
+      "tasks": [
         {
-          "work_type_id": "wt2",
-          "work_type_name": "Кладка кирпича",
-          "tasks": [
-            {
-              "task_id": "t3",
-              "task_name": "Первая линия кладки",
-              "task_description": "Укладка первого ряда кирпичей",
-              "time_intervals": []
-            }
-          ]
+          "task_id": "t3",
+          "task_name": "Первая линия кладки",
+          "task_description": "Укладка первого ряда кирпичей",
+          "time_intervals": []
         }
       ]
     }
