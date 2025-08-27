@@ -143,3 +143,6 @@ kubernetes/.DS_Store
 
 # temporary
 docker-compose.yml
+
+# Deploy commnds
+deploy.sample
