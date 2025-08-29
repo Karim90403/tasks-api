@@ -49,6 +49,9 @@ class AuthService:
         refresh_token = create_refresh_token(user_id)
         return Token(access_token=access_token, refresh_token=refresh_token)
 
+    async def list_users(self):
+        return await self.user_repo.get_all_users()
+
 def get_auth_service(
     repo: ABCUserRepository = Depends(get_user_elastic_repository),
 ) -> AuthService:

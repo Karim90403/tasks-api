@@ -4,6 +4,7 @@ from fastapi import Depends
 
 from repository.abc.manager_repository import ABCManagerRepository
 from repository.elasticsearch_implementation.manager_repository import get_manager_elastic_repository
+from schemas.request.project_create import ProjectCreate
 
 
 class ManagerService:
@@ -18,6 +19,9 @@ class ManagerService:
 
     async def shift_history(self) -> List[Dict[str, Any]]:
         return await self.repo.get_shift_history()
+
+    async def create_project(self, project: ProjectCreate) -> Dict[str, Any]:
+        return await self.repo.create_project(project.dict())
 
 
 def get_manager_service(

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, Any
 
 from elasticsearch._async.client import AsyncElasticsearch
 from fastapi import Depends
@@ -44,6 +44,14 @@ class UserRepository(ABCUserRepository):
         if not doc or not doc.get("found"):
             return None
         return UserInDB(**doc["_source"])
+
+    async def get_all_users(self) -> list[dict[str, Any]]:
+        result = await self.client.search(
+            index=self.index,
+            body={"query": {"match_all": {}}},
+            size=1000
+        )
+        return [hit["_source"] for hit in result["hits"]["hits"]]
 
 @lru_cache
 def get_user_elastic_repository(

@@ -14,3 +14,7 @@ class ABCManagerRepository(ABC):
     @abstractmethod
     async def get_shift_history(self) -> List[Dict[str, Any]]:
         ...
+
+    @abstractmethod
+    async def create_project(self, project_data: Dict[str, Any]) -> Dict[str, Any]:
+        ...

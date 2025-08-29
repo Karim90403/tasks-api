@@ -28,13 +28,15 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
         resp = await self.client.search(
             index=self.index,
             size=100,
-            _source=["work_stages"]
+            _source=["work_stages", "project_id", "project_name"]
         )
         results = []
         for hit in resp["hits"]["hits"]:
             ws = hit["_source"].get("work_stages", [])
+            project_id = hit["_source"].get("project_id", "")
+            project_name = hit["_source"].get("project_name", "")
             for stage in ws:
-                results.append(stage)
+                results.append(dict(project_id=project_id, project_name=project_name,**stage))
         return results
 
 
@@ -55,6 +57,14 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
         )
         return self.parse_shift_history(resp["hits"]["hits"])
 
+    async def create_project(self, project_data: Dict[str, Any]) -> Dict[str, Any]:
+        response = await self.client.index(
+            index=self.index,
+            id=project_data["project_id"],
+            document=project_data,
+            refresh="wait_for",
+        )
+        return response
 @lru_cache
 def get_manager_elastic_repository(
     client: AsyncElasticsearch = Depends(get_elastic_client),

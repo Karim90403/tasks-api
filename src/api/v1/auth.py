@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Form, HTTPException
 
+from core.dependencies import get_current_user
 from schemas.auth import RefreshRequest, Token
-from schemas.user import UserCreate, UserPublic
+from schemas.user import UserCreate, UserPublic, UserInDB
 from services.auth_service import AuthService, get_auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -45,3 +46,14 @@ async def refresh(body: RefreshRequest, service: AuthService = Depends(get_auth_
     if not sub:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
     return await service.refresh_tokens(sub)
+
+@router.get(
+    "/manager/users",
+    status_code=200,
+)
+async def list_users(
+        service: AuthService = Depends(get_auth_service),
+        current_user: UserInDB = Depends(get_current_user),
+):
+    if current_user.role == "root":
+        return await service.list_users()
