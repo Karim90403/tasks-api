@@ -73,7 +73,7 @@ PUT construction
 
 
 
-POST construction/_doc
+POST construction/_doc/p1
 {
   "project_id": "p1",
   "project_name": "Строительство жилого дома",

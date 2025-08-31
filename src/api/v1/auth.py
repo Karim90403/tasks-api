@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException
 
 from core.dependencies import get_current_user
 from schemas.auth import RefreshRequest, Token
-from schemas.user import UserCreate, UserPublic, UserInDB
+from schemas.user import UserCreate, UserInDB, UserPublic
 from services.auth_service import AuthService, get_auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])

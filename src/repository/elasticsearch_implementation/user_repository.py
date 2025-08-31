@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Optional, Any
+from typing import Any, Optional
 
 from elasticsearch._async.client import AsyncElasticsearch
 from fastapi import Depends

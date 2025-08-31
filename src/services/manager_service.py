@@ -23,6 +23,9 @@ class ManagerService:
     async def create_project(self, project: ProjectCreate) -> Dict[str, Any]:
         return await self.repo.create_project(project.dict())
 
+    async def change_project(self, project_id: str, key: str, value: Any) -> Dict[str, Any]:
+        return await self.repo.change_project(project_id, key, value)
+
 
 def get_manager_service(
     repo: ABCManagerRepository = Depends(get_manager_elastic_repository),

@@ -18,3 +18,7 @@ class ABCManagerRepository(ABC):
     @abstractmethod
     async def create_project(self, project_data: Dict[str, Any]) -> Dict[str, Any]:
         ...
+
+    @abstractmethod
+    async def change_project(self, project_id: str, key: str, value: Any) -> Dict[str, Any]:
+        ...

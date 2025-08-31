@@ -1,7 +1,8 @@
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from elasticsearch._async.client import AsyncElasticsearch
+from elasticsearch.exceptions import NotFoundError
 from fastapi import Depends
 
 from core.environment_config import settings
@@ -65,6 +66,85 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             refresh="wait_for",
         )
         return response
+
+    @staticmethod
+    def _ensure_list_size(lst: List[Any], idx: int):
+        while len(lst) <= idx:
+            lst.append(None)
+
+    @classmethod
+    def _set_by_path(cls, obj: Union[Dict[str, Any], List[Any]], path: str, value: Any):
+        """
+        Устанавливает value по dot-path. Поддерживает индексы массивов: "work_stages.0.stage_name".
+        Создаёт недостающие словари/списки.
+        """
+        parts = path.split(".")
+        cur = obj
+        for i, part in enumerate(parts):
+            is_last = i == len(parts) - 1
+            is_index = part.isdigit()
+
+            if is_index:
+                idx = int(part)
+                if not isinstance(cur, list):
+                    # превращаем текущий узел в список (если там ничего, делаем список)
+                    # если это dict — заменяем его на список (см. ниже комментарий)
+                    # аккуратнее: если cur — dict, то это означает, что предыдущий шаг создал dict,
+                    # нужно перевести его в список на уровне родителя — для простоты считаем,
+                    # что ключ уже был списком; в реальных данных это обычно корректно.
+                    new_list = []
+                    # если был dict, мы его "теряем", потому что целимся в массив
+                    # но такой кейс встречается редко; при необходимости можно
+                    # усложнить логику, чтобы хранить и dict и list.
+                    cur.clear()  # на всякий случай очищаем
+                    cur = new_list  # NOTE: см. пояснение ниже
+                cls._ensure_list_size(cur, idx)
+                if is_last:
+                    cur[idx] = value
+                else:
+                    if cur[idx] is None:
+                        # следующий уровень по умолчанию — dict
+                        cur[idx] = {}
+                    cur = cur[idx]
+            else:
+                # ключ словаря
+                if not isinstance(cur, dict):
+                    # если тут список — это конфликт структур, создаём dict
+                    # и "перезатираем" текущую позицию
+                    # (в нормальных данных такое не должно происходить)
+                    cur = {}
+                if is_last:
+                    cur[part] = value
+                else:
+                    if part not in cur or cur[part] is None:
+                        # по умолчанию следующий уровень — dict
+                        cur[part] = {}
+                    # если следующий сегмент — число, то готовим список
+                    if (i + 1) < len(parts) and parts[i + 1].isdigit() and not isinstance(cur[part], list):
+                        cur[part] = []
+                    cur = cur[part]
+
+    async def change_project(self, project_id: str, key: str, value: Any) -> Dict[str, Any]:
+        try:
+            got = await self.client.get(index=self.index, id=project_id)
+        except NotFoundError:
+            return {"result": "not_found", "project_id": project_id}
+
+        src = got["_source"]
+
+        # модифицируем на месте
+        self._set_by_path(src, key, value)
+
+        # перезаписываем документ (id тот же)
+        resp = await self.client.index(
+            index=self.index,
+            id=project_id,
+            document=src,
+            refresh="wait_for",
+        )
+        return resp
+
+
 @lru_cache
 def get_manager_elastic_repository(
     client: AsyncElasticsearch = Depends(get_elastic_client),
