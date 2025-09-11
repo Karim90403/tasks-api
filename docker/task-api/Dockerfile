@@ -41,3 +41,6 @@ FROM base as local
 # Server stage
 FROM base as server
 COPY --chown=${UID}:${GID} ./src/ .
+
+RUN mkdir -p /uploads && chmod -R 775 /uploads
+

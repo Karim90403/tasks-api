@@ -29,6 +29,24 @@ class ForemanService:
         status = await self.repo.get_shift_status(foreman_id)
         return {"status": status}
 
+    async def add_report_links(
+            self,
+            project_id: str,
+            stage_id: str,
+            task_id: str,
+            subtask_id: str,
+            links: List[Dict[str, str]],
+            uploaded_by: str | None = None,
+    ) -> Dict[str, Any]:
+        return await self.repo.add_report_links(
+            project_id=project_id,
+            stage_id=stage_id,
+            task_id=task_id,
+            subtask_id=subtask_id,
+            links=links,
+            uploaded_by=uploaded_by,
+        )
+
 
 def get_foreman_service(
     repo: ABCForemanRepository = Depends(get_foreman_elastic_repository),

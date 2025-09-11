@@ -13,6 +13,7 @@ class ProjectConfig(BaseSettings):
     api_host: str = Field(default="127.0.0.1", env="API_HOST")
     api_port: int = Field(default=8000, env="API_PORT")
     debug: bool = Field(default=False, env="DEBUG")
+    file_dir: str = Field(default="/data/uploads", env="FILE_DIR")
     base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class RedisConfig(BaseSettings):

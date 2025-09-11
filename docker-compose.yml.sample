@@ -43,6 +43,10 @@ services:
         condition: service_healthy
     ports:
       - "8001:8000"
+    environment:
+      - FILE_DIR=/uploads
+    volumes:
+      - uploads:/uploads
 
   search_redis:
     image: redis:6.2-alpine

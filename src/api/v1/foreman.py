@@ -1,10 +1,18 @@
+import datetime
+import aiofiles
+from pathlib import Path
 from typing import List
+from urllib.request import Request
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, UploadFile, File, HTTPException
 
 from core.dependencies import get_current_user
+from core.environment_config import settings
+from core.functions import _safe_name
+from schemas.request.project_change import UploadResult
 from schemas.user import UserInDB
 from services.foreman_service import ForemanService, get_foreman_service
+
 
 router = APIRouter(prefix="/api/foreman", tags=["foreman"])
 
@@ -60,3 +68,74 @@ async def shift_status(
     current_user: UserInDB = Depends(get_current_user),
 ):
     return await service.shift_status(current_user.id)
+
+@router.post(
+    "/projects/{project_id}/files",
+    response_model=List[UploadResult],
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_project_files(
+    request: Request,
+    project_id: str,
+    stage_id: str,
+    task_id: str,
+    subtask_id: str,
+    files: List[UploadFile] = File(...),
+    current_user: UserInDB = Depends(get_current_user),
+    service: ForemanService = Depends(get_foreman_service),
+):
+    project_dir = Path(settings.project.file_dir) / _safe_name(project_id)
+    project_dir.mkdir(parents=True, exist_ok=True)
+
+    results: List[UploadResult] = []
+    new_links: List[dict] = []
+
+    ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    for f in files:
+        safe_base = _safe_name(f.filename or "file.bin")
+        target_path = project_dir / f"{ts}_{safe_base}"
+
+        size = 0
+        async with aiofiles.open(target_path, "wb") as out:
+            while True:
+                chunk = await f.read(1024 * 1024)  # 1MB
+                if not chunk:
+                    break
+                size += len(chunk)
+                await out.write(chunk)
+
+        # Сформируем абсолютную ссылку, которая ведёт на /files/...
+        base = str(request.host).rstrip("/")  # http://host:8001
+        rel_url = f"/files/{_safe_name(project_id)}/{target_path.name}"
+        abs_url = f"{base}{rel_url}"
+
+        results.append(
+            UploadResult(
+                filename=target_path.name,
+                size=size,
+                url=rel_url,
+                content_type=f.content_type or "application/octet-stream",
+                stage_id=stage_id,
+                task_id=task_id,
+                subtask_id=subtask_id,
+            )
+        )
+
+        # Объект для reportLinks: используем имя файла как title
+        new_links.append({"title": safe_base, "href": abs_url})
+
+    # <<< ВАЖНО >>> после успешной записи на диск — обновим документ проекта в Elasticsearch
+    updated = await service.add_report_links(
+        project_id=project_id,
+        stage_id=stage_id,
+        task_id=task_id,
+        subtask_id=subtask_id,
+        links=new_links,
+        uploaded_by=current_user.email,
+    )
+
+    if updated.get("result") == "not_found":
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+    return results

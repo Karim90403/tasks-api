@@ -1,6 +1,8 @@
+import elasticsearch
+
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from elasticsearch._async.client import AsyncElasticsearch
 from fastapi import Depends
@@ -238,6 +240,66 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                             if ti.get("end_time") in (None, "") or ti.get("status") == "active":
                                 return "working"
         return "not_working"
+
+    async def add_report_links(
+            self,
+            project_id: str,
+            stage_id: str,
+            task_id: str,
+            subtask_id: str,
+            links: List[Dict[str, str]],
+            uploaded_by: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Добавляет элементы в work_stages[].tasks[].subtasks[].reportLinks для одного проекта.
+        links: [{ "title": "...", "href": "..."}, ...]
+        """
+        try:
+            got = await self.client.get(index=self.index, id=project_id)
+        except elasticsearch.exceptions.NotFoundError:
+            return {"result": "not_found", "project_id": project_id}
+
+        src = got["_source"]
+
+        ws = src.get("work_stages", [])
+        stage = next((s for s in ws if s.get("stage_id") == stage_id), None)
+        if not stage:
+            return {"result": "stage_not_found", "stage_id": stage_id}
+
+        tasks = stage.get("tasks", [])
+        task = next((t for t in tasks if t.get("task_id") == task_id), None)
+        if not task:
+            return {"result": "task_not_found", "task_id": task_id}
+
+        subtasks = task.get("subtasks", [])
+        subtask = next((st for st in subtasks if st.get("subtask_id") == subtask_id), None)
+        if not subtask:
+            return {"result": "subtask_not_found", "subtask_id": subtask_id}
+
+        rlinks = subtask.get("reportLinks")
+        if rlinks is None or not isinstance(rlinks, list):
+            rlinks = []
+            subtask["reportLinks"] = rlinks
+
+        from datetime import datetime, timezone
+        uploaded_at = datetime.now(timezone.utc).isoformat()
+
+        for link in links:
+            enriched = {
+                "title": link.get("title") or "Файл",
+                "href": link.get("href"),
+            }
+            rlinks.append(enriched)
+
+        resp = await self.client.index(
+            index=self.index,
+            id=project_id,
+            document=src,
+            refresh="wait_for",
+            if_seq_no=got.get("_seq_no"),
+            if_primary_term=got.get("_primary_term"),
+        )
+        return resp
 
 
 @lru_cache
