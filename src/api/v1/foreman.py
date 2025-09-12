@@ -2,7 +2,7 @@ import datetime
 import aiofiles
 from pathlib import Path
 from typing import List
-from urllib.request import Request
+from starlette.requests import Request
 
 from fastapi import APIRouter, Depends, status, UploadFile, File, HTTPException
 
@@ -105,8 +105,7 @@ async def upload_project_files(
                 size += len(chunk)
                 await out.write(chunk)
 
-        # Сформируем абсолютную ссылку, которая ведёт на /files/...
-        base = str(request.host).rstrip("/")  # http://host:8001
+        base = str(request.base_url).rstrip("/")
         rel_url = f"/files/{_safe_name(project_id)}/{target_path.name}"
         abs_url = f"{base}{rel_url}"
 
@@ -132,7 +131,6 @@ async def upload_project_files(
         task_id=task_id,
         subtask_id=subtask_id,
         links=new_links,
-        uploaded_by=current_user.email,
     )
 
     if updated.get("result") == "not_found":

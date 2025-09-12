@@ -26,3 +26,14 @@ class ABCForemanRepository(ABC):
     @abstractmethod
     async def get_shift_status(self, foreman_id: str) -> str:
         ...
+
+    @abstractmethod
+    async def add_report_links(
+            self,
+            project_id: str,
+            stage_id: str,
+            task_id: str,
+            subtask_id: str,
+            links: List[Dict[str, str]],
+    ) -> Dict[str, Any]:
+        ...

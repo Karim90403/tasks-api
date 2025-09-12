@@ -42,5 +42,7 @@ FROM base as local
 FROM base as server
 COPY --chown=${UID}:${GID} ./src/ .
 
-RUN mkdir -p /uploads && chmod -R 775 /uploads
+USER root
+RUN mkdir -p /uploads && chown ${UID}:${GID} /uploads && chmod 775 /uploads
+USER user
 

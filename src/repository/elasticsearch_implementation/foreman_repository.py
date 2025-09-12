@@ -248,7 +248,6 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             task_id: str,
             subtask_id: str,
             links: List[Dict[str, str]],
-            uploaded_by: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Добавляет элементы в work_stages[].tasks[].subtasks[].reportLinks для одного проекта.

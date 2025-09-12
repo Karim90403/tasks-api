@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import Depends
 
@@ -36,7 +36,6 @@ class ForemanService:
             task_id: str,
             subtask_id: str,
             links: List[Dict[str, str]],
-            uploaded_by: str | None = None,
     ) -> Dict[str, Any]:
         return await self.repo.add_report_links(
             project_id=project_id,
@@ -44,7 +43,7 @@ class ForemanService:
             task_id=task_id,
             subtask_id=subtask_id,
             links=links,
-            uploaded_by=uploaded_by,
+
         )
 
 
