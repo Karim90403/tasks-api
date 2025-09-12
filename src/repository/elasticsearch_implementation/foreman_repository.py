@@ -1,9 +1,8 @@
-import elasticsearch
-
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
+import elasticsearch
 from elasticsearch._async.client import AsyncElasticsearch
 from fastapi import Depends
 

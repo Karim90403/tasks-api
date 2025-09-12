@@ -1,6 +1,7 @@
 import sys
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from api.main import setup_routers
 from common.dependencies.main import setup_dependencies
@@ -10,7 +11,6 @@ from core.cmd_parser import Parser
 from core.environment_config import settings
 from core.logguru_config import init_logging
 from lifespan import lifespan
-from fastapi.staticfiles import StaticFiles
 
 if __name__ != "__main__":
     init_logging()

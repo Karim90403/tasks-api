@@ -3,6 +3,7 @@ from typing import Optional
 
 from fastapi import Depends
 
+from common.exceptions.authorisation import AuthorisationException
 from core.security import create_access_token, create_refresh_token, hash_password, verify_password
 from repository.abc.user_repository import ABCUserRepository
 from repository.elasticsearch_implementation.user_repository import get_user_elastic_repository
@@ -33,7 +34,7 @@ class AuthService:
     async def authenticate_user(self, email: str, password: str) -> Token:
         user = await self.user_repo.get_user_by_email(email)
         if not user or not verify_password(password, user.hashed_password):
-            raise ValueError("Invalid credentials")
+            raise AuthorisationException("Invalid credentials")
 
         access_token = create_access_token(user.id)
         refresh_token = create_refresh_token(user.id)

@@ -1,10 +1,10 @@
 import datetime
-import aiofiles
 from pathlib import Path
 from typing import List
-from starlette.requests import Request
 
-from fastapi import APIRouter, Depends, status, UploadFile, File, HTTPException
+import aiofiles
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from starlette.requests import Request
 
 from core.dependencies import get_current_user
 from core.environment_config import settings
@@ -12,7 +12,6 @@ from core.functions import _safe_name
 from schemas.request.project_change import UploadResult
 from schemas.user import UserInDB
 from services.foreman_service import ForemanService, get_foreman_service
-
 
 router = APIRouter(prefix="/api/foreman", tags=["foreman"])
 

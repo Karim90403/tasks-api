@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from fastapi import Depends
 
@@ -43,7 +43,6 @@ class ForemanService:
             task_id=task_id,
             subtask_id=subtask_id,
             links=links,
-
         )
 
 
