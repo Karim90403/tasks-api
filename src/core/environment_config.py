@@ -47,6 +47,7 @@ class ElasticConfig(BaseSettings):
     password: Optional[str] = Field(default=None, env="ELASTIC_PASSWORD")
     index: str = Field(default="construction", env="ELASTIC_INDEX")
     users_index: str = Field(default="users", env="ELASTIC_USERS_INDEX")
+    brigades_index: str = Field(default="brigades", env="ELASTIC_BIGRADES_INDEX")
     request_timeout: int = Field(default=10, env="ELASTIC_REQUEST_TIMEOUT")
 
 

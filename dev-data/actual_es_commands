@@ -5,7 +5,6 @@ PUT construction
   "mappings": {
     "properties": {
       "project_id": { "type": "keyword" },
-      "project_name": { "type": "text" },
       "foreman_id": { "type": "keyword" },
       "work_stages": {
         "type": "nested",
@@ -76,7 +75,6 @@ PUT construction
 POST construction/_doc/p1
 {
   "project_id": "p1",
-  "project_name": "Строительство жилого дома",
   "foreman_email": "user@example.com",
   "foreman_id": "ebaf42b2-c945-400d-bb11-6a17f9e4a0dc",
   "work_stages": [
