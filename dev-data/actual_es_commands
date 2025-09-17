@@ -34,15 +34,25 @@ PUT construction
                   "subtask_name": { "type": "text" },
                   "subtask_status": { "type": "keyword" },
                   "subtask_description": { "type": "text" },
-                  "time_intervals": {
+
+                  /* старое assignees убрано */
+                  "brigade_id": { "type": "keyword" },
+
+                  /* опционально: snapshot состава на момент назначения */
+                  "brigade_snapshot": {
                     "type": "nested",
                     "properties": {
-                      "start_time": { "type": "date" },
-                      "end_time": { "type": "date" },
-                      "status": { "type": "keyword" }
+                      "brigade_name": { "type": "text" },
+                      "members": {
+                        "type": "nested",
+                        "properties": {
+                          "user_id": { "type": "keyword" },
+                          "email": { "type": "keyword" }
+                        }
+                      }
                     }
                   },
-                  "assignees": { "type": "keyword" },
+
                   "deadline": { "type": "date" },
                   "plannedQty": { "type": "float" },
                   "actualQty": { "type": "float" },
@@ -50,7 +60,7 @@ PUT construction
                     "type": "object",
                     "properties": {
                       "hours": { "type": "float" },
-                      "units": { "type": "float" }
+                      "number": { "type": "keyword" }
                     }
                   },
                   "reportLinks": {
@@ -69,6 +79,7 @@ PUT construction
     }
   }
 }
+
 
 
 
@@ -94,83 +105,30 @@ POST construction/_doc/p1
               "subtask_name": "Вывоз мусора",
               "subtask_status": "Завершено",
               "subtask_description": "Убрать строительный мусор",
-              "assignees": ["worker1", "worker2"],
+              "brigade_id": "b1",
+              "brigade_snapshot": {
+                "brigade_name": "Бригада А",
+                "members": [
+                  { "user_id": "worker1", "email": "w1@example.com" },
+                  { "user_id": "worker2", "email": "w2@example.com" }
+                ]
+              },
               "deadline": "2025-08-20",
               "plannedQty": 10,
               "actualQty": 12,
-              "machine": {
-                "hours": 5,
-                "units": 2
-              },
-              "reportLinks": [
-                { "title": "Фото отчёт", "href": "http://example.com/report1" }
-              ],
+              "machine": { "hours": 5, "number": "123" },
+              "reportLinks": [ { "title": "Фото отчёт", "href": "http://example.com/report1" } ],
               "time_intervals": [
-                {
-                  "start_time": "2025-08-16T08:00:00",
-                  "end_time": "2025-08-16T17:00:00",
-                  "status": "closed"
-                }
-              ]
-            },
-            {
-              "subtask_id": "st2",
-              "subtask_name": "Разметка территории",
-              "subtask_status": "Завершено",
-              "subtask_description": "Разметить границы фундамента",
-              "assignees": ["worker3"],
-              "deadline": "2025-08-18",
-              "plannedQty": 5,
-              "actualQty": 5,
-              "machine": {
-                "hours": 5,
-                "units": 2
-              },
-              "reportLinks": [],
-              "time_intervals": [
-                {
-                  "start_time": "2025-08-16T08:00:00",
-                  "end_time": "2025-08-16T17:00:00",
-                  "status": "closed"
-                }
+                { "start_time": "2025-08-16T08:00:00", "end_time": "2025-08-16T17:00:00", "status": "closed" }
               ]
             }
           ]
-        },
-        {
-          "task_id": "t2",
-          "task_name": "Армирование",
-          "task_status": "В работе",
-          "task_description": "Установка арматурного каркаса",
-          "time_intervals": [
-            {
-              "start_time": "2025-08-16T08:00:00",
-              "end_time": "2025-08-16T17:00:00",
-              "status": "closed"
-            },
-            {
-              "start_time": "2025-08-17T08:00:00",
-              "status": "active"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "stage_id": "s2",
-      "stage_name": "Стены",
-      "stage_status": "",
-      "tasks": [
-        {
-          "task_id": "t3",
-          "task_name": "Первая линия кладки",
-          "task_description": "Укладка первого ряда кирпичей",
-          "time_intervals": []
         }
       ]
     }
   ]
 }
+
 
 
 
@@ -217,4 +175,36 @@ POST users/_update/0d2d6c94-377a-46c8-9051-842bb1330bcc
   "doc": {
     "role": "root"
   }
+}
+
+
+PUT brigades
+{
+  "mappings": {
+    "properties": {
+      "brigade_id": { "type": "keyword" },
+      "brigade_name": { "type": "text" },
+      "members": {
+        "type": "nested",
+        "properties": {
+          "user_id": { "type": "keyword" },
+          "email": { "type": "keyword" }
+        }
+      },
+      "created_at": { "type": "date" },
+      "created_by": { "type": "keyword" }
+    }
+  }
+}
+
+POST brigades/_doc/b1
+{
+  "brigade_id": "b1",
+  "brigade_name": "Бригада А",
+  "members": [
+    { "user_id": "worker1", "email": "w1@example.com" },
+    { "user_id": "worker2", "email": "w2@example.com" }
+  ],
+  "created_at": "2025-08-01T12:00:00Z",
+  "created_by": "ebaf42b2-c945-400d-bb11-6a17f9e4a0dc"
 }
