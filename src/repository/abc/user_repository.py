@@ -20,3 +20,15 @@ class ABCUserRepository(ABC):
     @abstractmethod
     async def get_all_users(self) -> list[dict[str, Any]]:
         ...
+
+    @abstractmethod
+    async def add_project_to_user(self, user_id: str, project_id: str) -> None:
+        ...
+
+    @abstractmethod
+    async def remove_project_from_user(self, user_id: str, project_id: str) -> None:
+        ...
+
+    @abstractmethod
+    async def update_user(self, user: UserInDB) -> None:
+        ...

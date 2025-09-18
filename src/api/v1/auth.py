@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Form, HTTPException
 
-from core.dependencies import get_current_user
+from core.dependencies import check_project_access
 from schemas.auth import RefreshRequest, Token
-from schemas.user import UserCreate, UserInDB, UserPublic
+from schemas.user import UserCreate, UserPublic
 from services.auth_service import AuthService, get_auth_service
+from fastapi import Response
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -50,10 +51,38 @@ async def refresh(body: RefreshRequest, service: AuthService = Depends(get_auth_
 @router.get(
     "/manager/users",
     status_code=200,
+    dependencies=[Depends(check_project_access)]
 )
 async def list_users(
         service: AuthService = Depends(get_auth_service),
-        current_user: UserInDB = Depends(get_current_user),
 ):
     if current_user.role == "root":
         return await service.list_users()
+
+
+@router.post("/manager/projects/{project_id}/assign-manager/{user_id}", status_code=204, dependencies=[Depends(check_project_access)])
+async def assign_manager_to_project(
+    project_id: str,
+    user_id: str,
+    service: AuthService = Depends(get_auth_service)
+):
+    # проверка, что пользователь существует
+    target_user = await service.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # добавим проект в список менеджера
+    await service.add_project_to_user(user_id, project_id)
+    return Response(status_code=204)
+
+@router.post("/manager/projects/{project_id}/revoke-manager/{user_id}", status_code=204, dependencies=[Depends(check_project_access)])
+async def revoke_manager_from_project(
+    project_id: str,
+    user_id: str,
+    service: AuthService = Depends(get_auth_service)
+):
+    target_user = await service.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await service.remove_project_from_user(user_id, project_id)
+    return Response(status_code=204)
+

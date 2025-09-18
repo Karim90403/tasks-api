@@ -8,6 +8,7 @@ from core.security import create_access_token, is_token_expiring_soon, try_decod
 from repository.abc.user_repository import ABCUserRepository
 from repository.elasticsearch_implementation.user_repository import get_user_elastic_repository
 from schemas.user import UserInDB
+from fastapi import Path
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/loginform")
 
@@ -56,3 +57,16 @@ async def get_current_user(
     new_access = create_access_token(user_id)
     response.headers["X-New-Access-Token"] = new_access
     return user
+
+
+async def check_project_access(
+    project_id: str = Path(...),
+    current_user: UserInDB = Depends(get_current_user)
+) -> UserInDB:
+    # root всегда OK
+    if current_user.role == "root":
+        return current_user
+    # project manager: проверяем список управляемых проектов
+    if current_user.role == "project_manager" and project_id in current_user.managed_projects:
+        return current_user
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No access to this project")

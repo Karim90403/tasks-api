@@ -53,6 +53,15 @@ class AuthService:
     async def list_users(self):
         return await self.user_repo.get_all_users()
 
+    async def add_project_to_user(self, user_id: str, project_id: str) -> None:
+        return await self.user_repo.add_project_to_user(user_id, project_id)
+
+    async def remove_project_from_user(self, user_id: str, project_id: str) -> None:
+        return await self.user_repo.remove_project_from_user(user_id, project_id)
+
+    async def update_user(self, user: UserInDB) -> None:
+        return await self.user_repo.update_user(user)
+
 def get_auth_service(
     repo: ABCUserRepository = Depends(get_user_elastic_repository),
 ) -> AuthService:
