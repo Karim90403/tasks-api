@@ -53,7 +53,10 @@ PUT construction
                     }
                   },
 
-                  "deadline": { "type": "date" },
+                  "properties": {
+                    "start": { "type": "date" },
+                    "end": { "type": "date" }
+                  },
                   "plannedQty": { "type": "float" },
                   "actualQty": { "type": "float" },
                   "machine": {
@@ -113,7 +116,7 @@ POST construction/_doc/p1
                   { "user_id": "worker2", "email": "w2@example.com" }
                 ]
               },
-              "deadline": "2025-08-20",
+              "deadline": { "start": "2025-08-16", "end": "2025-08-16"},
               "plannedQty": 10,
               "actualQty": 12,
               "machine": { "hours": 5, "number": "123" },
@@ -170,7 +173,7 @@ GET construction/_search
 
 GET construction/_refresh
 
-POST users/_update/0d2d6c94-377a-46c8-9051-842bb1330bcc
+POST users/_update/12c79727-ebd2-40c3-a31b-3bfefff7a7cb
 {
   "doc": {
     "role": "root"
