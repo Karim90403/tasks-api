@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException
 
 from core.dependencies import check_project_access
 from schemas.auth import RefreshRequest, Token
-from schemas.user import UserCreate, UserPublic
+from schemas.user import UserCreate, UserPublic, UserInDB
 from services.auth_service import AuthService, get_auth_service
 from fastapi import Response
 
@@ -55,6 +55,7 @@ async def refresh(body: RefreshRequest, service: AuthService = Depends(get_auth_
 )
 async def list_users(
         service: AuthService = Depends(get_auth_service),
+        current_user: UserInDB = Depends(check_project_access),
 ):
     if current_user.role == "root":
         return await service.list_users()
