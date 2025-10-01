@@ -4,6 +4,9 @@ networks:
   hermes_default:
     external: true
 
+volumes:
+  uploads: {}
+
 services:
   search_elasticsearch:
     container_name: search_elasticsearch
