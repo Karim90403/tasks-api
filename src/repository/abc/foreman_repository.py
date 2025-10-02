@@ -32,6 +32,7 @@ class ABCForemanRepository(ABC):
             self,
             project_id: str,
             stage_id: str,
+            work_type_id: str,
             task_id: str,
             subtask_id: str,
             links: List[Dict[str, str]],

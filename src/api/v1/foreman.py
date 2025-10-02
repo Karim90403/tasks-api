@@ -77,6 +77,7 @@ async def upload_project_files(
     request: Request,
     project_id: str,
     stage_id: str,
+    work_type_id: str,
     task_id: str,
     subtask_id: str,
     files: List[UploadFile] = File(...),
@@ -127,6 +128,7 @@ async def upload_project_files(
     updated = await service.add_report_links(
         project_id=project_id,
         stage_id=stage_id,
+        work_type_id=work_type_id,
         task_id=task_id,
         subtask_id=subtask_id,
         links=new_links,

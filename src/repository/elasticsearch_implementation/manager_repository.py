@@ -21,8 +21,9 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
         resp = await self.client.search(
             index=self.index,
             size=100,
-            _source=["project_id", "project_name"]
+            _source=["project_id"]
         )
+        print([hit["_source"] for hit in resp["hits"]["hits"]])
         return [hit["_source"] for hit in resp["hits"]["hits"]]
 
     async def get_tasks(self) -> List[Dict[str, Any]]:
@@ -48,12 +49,12 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             _source=[
                 "project_id",
                 "project_name",
-                "work_stages.tasks.task_id",
-                "work_stages.tasks.task_name",
-                "work_stages.tasks.time_intervals",
-                "work_stages.tasks.subtasks.subtask_id",
-                "work_stages.tasks.subtasks.subtask_name",
-                "work_stages.tasks.subtasks.time_intervals",
+                "work_stages.work_types.tasks.task_id",
+                "work_stages.work_types.tasks.task_name",
+                "work_stages.work_types.tasks.time_intervals",
+                "work_stages.work_types.tasks.subtasks.subtask_id",
+                "work_stages.work_types.tasks.subtasks.subtask_name",
+                "work_stages.work_types.tasks.subtasks.time_intervals",
             ],
         )
         return self.parse_shift_history(resp["hits"]["hits"])
@@ -75,7 +76,7 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
     @classmethod
     def _set_by_path(cls, obj: Union[Dict[str, Any], List[Any]], path: str, value: Any):
         """
-        Устанавливает value по dot-path. Поддерживает индексы массивов: "work_stages.0.stage_name".
+        Устанавливает value по dot-path. Поддерживает индексы массивов: "work_stages.0.work_type_name.0.stage_name".
         Создаёт недостающие словари/списки.
         """
         parts = path.split(".")

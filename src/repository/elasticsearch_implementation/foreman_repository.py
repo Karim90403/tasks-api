@@ -52,58 +52,62 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             "script": {
                 "source": """
                     boolean updated = false;
-
+            
                     if (ctx._source.work_stages != null) {
                         for (stage in ctx._source.work_stages) {
-                            if (stage.tasks != null) {
-                                for (task in stage.tasks) {
-                                    // Обработка задач
-                                    if (params.task_ids.contains(task.task_id)) {
-                                        if (task.time_intervals == null) {
-                                            task.time_intervals = [];
-                                        }
-                                        // Проверяем, есть ли активный интервал
-                                        boolean hasActiveInterval = false;
-                                        if (!task.time_intervals.isEmpty()) {
-                                            def lastInterval = task.time_intervals.get(task.time_intervals.size() - 1);
-                                            if (lastInterval.end_time == null) {
-                                                hasActiveInterval = true;
-                                            }
-                                        }
-                                        if (!hasActiveInterval) {
-                                            def newInterval = [
-                                                'start_time': params.now,
-                                                'end_time': null,
-                                                'status': 'active'
-                                            ];
-                                            task.time_intervals.add(newInterval);
-                                            updated = true;
-                                        }
-                                    }
-
-                                    // Обработка подзадач
-                                    if (task.subtasks != null && !task.subtasks.isEmpty()) {
-                                        for (sub in task.subtasks) {
-                                            if (params.subtask_ids.contains(sub.subtask_id)) {
-                                                if (sub.time_intervals == null) {
-                                                    sub.time_intervals = [];
+                            if (stage.work_types != null) {
+                                for (wtype in stage.work_types) {
+                                    if (wtype.tasks != null) {
+                                        for (task in wtype.tasks) {
+                                            // Обработка задач
+                                            if (params.task_ids.contains(task.task_id)) {
+                                                if (task.time_intervals == null) {
+                                                    task.time_intervals = [];
                                                 }
                                                 // Проверяем, есть ли активный интервал
-                                                boolean hasActiveSubInterval = false;
-                                                if (!sub.time_intervals.isEmpty()) {
-                                                    def lastSubInterval = sub.time_intervals.get(sub.time_intervals.size() - 1);
-                                                    if (lastSubInterval.end_time == null) {
-                                                        hasActiveSubInterval = true;
+                                                boolean hasActiveInterval = false;
+                                                if (!task.time_intervals.isEmpty()) {
+                                                    def lastInterval = task.time_intervals.get(task.time_intervals.size() - 1);
+                                                    if (lastInterval.end_time == null) {
+                                                        hasActiveInterval = true;
                                                     }
                                                 }
-                                                if (!hasActiveSubInterval) {
-                                                    def newSubInterval = [
+                                                if (!hasActiveInterval) {
+                                                    def newInterval = [
                                                         'start_time': params.now,
                                                         'end_time': null,
                                                         'status': 'active'
                                                     ];
-                                                    sub.time_intervals.add(newSubInterval);
+                                                    task.time_intervals.add(newInterval);
                                                     updated = true;
+                                                }
+                                            }
+            
+                                            // Обработка подзадач
+                                            if (task.subtasks != null && !task.subtasks.isEmpty()) {
+                                                for (sub in task.subtasks) {
+                                                    if (params.subtask_ids.contains(sub.subtask_id)) {
+                                                        if (sub.time_intervals == null) {
+                                                            sub.time_intervals = [];
+                                                        }
+                                                        // Проверяем, есть ли активный интервал
+                                                        boolean hasActiveSubInterval = false;
+                                                        if (!sub.time_intervals.isEmpty()) {
+                                                            def lastSubInterval = sub.time_intervals.get(sub.time_intervals.size() - 1);
+                                                            if (lastSubInterval.end_time == null) {
+                                                                hasActiveSubInterval = true;
+                                                            }
+                                                        }
+                                                        if (!hasActiveSubInterval) {
+                                                            def newSubInterval = [
+                                                                'start_time': params.now,
+                                                                'end_time': null,
+                                                                'status': 'active'
+                                                            ];
+                                                            sub.time_intervals.add(newSubInterval);
+                                                            updated = true;
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -112,7 +116,7 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                             }
                         }
                     }
-
+            
                     if (!updated) {
                         ctx.op = 'noop';
                     }
@@ -120,6 +124,7 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                 "params": {"task_ids": task_ids, "subtask_ids": subtask_ids, "now": now},
                 "lang": "painless"
             }
+
         }
 
         try:
@@ -141,33 +146,37 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             "script": {
                 "source": """
                     boolean updated = false;
-
+            
                     if (ctx._source.work_stages != null) {
                         for (stage in ctx._source.work_stages) {
-                            if (stage.tasks != null) {
-                                for (task in stage.tasks) {
-                                    // Обработка задач
-                                    if (params.task_ids.contains(task.task_id)) {
-                                        if (task.time_intervals != null && !task.time_intervals.isEmpty()) {
-                                            def lastTaskInterval = task.time_intervals.get(task.time_intervals.size() - 1);
-                                            if (lastTaskInterval.end_time == null) {
-                                                lastTaskInterval.end_time = params.now;
-                                                lastTaskInterval.status = 'closed';
-                                                updated = true;
-                                            }
-                                        }
-                                    }
-
-                                    // Обработка подзадач
-                                    if (task.subtasks != null && !task.subtasks.isEmpty()) {
-                                        for (sub in task.subtasks) {
-                                            if (params.subtask_ids.contains(sub.subtask_id)) {
-                                                if (sub.time_intervals != null && !sub.time_intervals.isEmpty()) {
-                                                    def lastSubInterval = sub.time_intervals.get(sub.time_intervals.size() - 1);
-                                                    if (lastSubInterval.end_time == null) {
-                                                        lastSubInterval.end_time = params.now;
-                                                        lastSubInterval.status = 'closed';
+                            if (stage.work_types != null) {
+                                for (wtype in stage.work_types) {
+                                    if (wtype.tasks != null) {
+                                        for (task in wtype.tasks) {
+                                            // Обработка задач
+                                            if (params.task_ids.contains(task.task_id)) {
+                                                if (task.time_intervals != null && !task.time_intervals.isEmpty()) {
+                                                    def lastTaskInterval = task.time_intervals.get(task.time_intervals.size() - 1);
+                                                    if (lastTaskInterval.end_time == null) {
+                                                        lastTaskInterval.end_time = params.now;
+                                                        lastTaskInterval.status = 'closed';
                                                         updated = true;
+                                                    }
+                                                }
+                                            }
+            
+                                            // Обработка подзадач
+                                            if (task.subtasks != null && !task.subtasks.isEmpty()) {
+                                                for (sub in task.subtasks) {
+                                                    if (params.subtask_ids.contains(sub.subtask_id)) {
+                                                        if (sub.time_intervals != null && !sub.time_intervals.isEmpty()) {
+                                                            def lastSubInterval = sub.time_intervals.get(sub.time_intervals.size() - 1);
+                                                            if (lastSubInterval.end_time == null) {
+                                                                lastSubInterval.end_time = params.now;
+                                                                lastSubInterval.status = 'closed';
+                                                                updated = true;
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -177,14 +186,15 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                             }
                         }
                     }
-
+            
                     if (!updated) {
                         ctx.op = 'noop';
                     }
                 """,
                 "params": {"task_ids": task_ids, "subtask_ids": subtask_ids, "now": now},
                 "lang": "painless"
-            }
+    }
+
         }
 
         try:
@@ -205,12 +215,12 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             _source=[
                 "project_id",
                 "project_name",
-                "work_stages.tasks.task_id",
-                "work_stages.tasks.task_name",
-                "work_stages.tasks.time_intervals",
-                "work_stages.tasks.subtasks.subtask_id",
-                "work_stages.tasks.subtasks.subtask_name",
-                "work_stages.tasks.subtasks.time_intervals",
+                "work_stages.work_types.tasks.task_id",
+                "work_stages.work_types.tasks.task_name",
+                "work_stages.work_types.tasks.time_intervals",
+                "work_stages.work_types.tasks.subtasks.subtask_id",
+                "work_stages.work_types.tasks.subtasks.subtask_name",
+                "work_stages.work_types.tasks.subtasks.time_intervals",
             ],
         )
 
@@ -222,28 +232,30 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             size=1,
             query={"match": {"foreman_id": foreman_id}},
             _source=[
-                "work_stages.tasks.time_intervals",
-                "work_stages.tasks.subtasks.time_intervals",
+                "work_stages.work_types.tasks.time_intervals",
+                "work_stages.work_types.tasks.subtasks.time_intervals",
             ],
         )
 
         for hit in resp["hits"]["hits"]:
             ws = hit["_source"].get("work_stages", [])
             for stage in ws:
-                for task in stage.get("tasks", []):
-                    for ti in task.get("time_intervals", []):
-                        if ti.get("end_time") in (None, "") or ti.get("status") == "active":
-                            return "working"
-                    for sub in task.get("subtasks", []):
-                        for ti in sub.get("time_intervals", []):
+                for wt in stage.get("work_types", []):
+                    for task in wt.get("tasks", []):
+                        for ti in task.get("time_intervals", []):
                             if ti.get("end_time") in (None, "") or ti.get("status") == "active":
                                 return "working"
+                        for sub in task.get("subtasks", []):
+                            for ti in sub.get("time_intervals", []):
+                                if ti.get("end_time") in (None, "") or ti.get("status") == "active":
+                                    return "working"
         return "not_working"
 
     async def add_report_links(
             self,
             project_id: str,
             stage_id: str,
+            work_type_id: str,
             task_id: str,
             subtask_id: str,
             links: List[Dict[str, str]],
@@ -264,7 +276,12 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
         if not stage:
             return {"result": "stage_not_found", "stage_id": stage_id}
 
-        tasks = stage.get("tasks", [])
+        wt = stage.get("work_stages", [])
+        work_type = next((s for s in wt if s.get("stage_id") == work_type_id), None)
+        if not work_type:
+            return {"result": "work_type_not_found", "work_type_id": work_type_id}
+
+        tasks = work_type.get("tasks", [])
         task = next((t for t in tasks if t.get("task_id") == task_id), None)
         if not task:
             return {"result": "task_not_found", "task_id": task_id}

@@ -33,6 +33,7 @@ class ForemanService:
             self,
             project_id: str,
             stage_id: str,
+            work_type_id: str,
             task_id: str,
             subtask_id: str,
             links: List[Dict[str, str]],
@@ -40,6 +41,7 @@ class ForemanService:
         return await self.repo.add_report_links(
             project_id=project_id,
             stage_id=stage_id,
+            work_type_id=work_type_id,
             task_id=task_id,
             subtask_id=subtask_id,
             links=links,
