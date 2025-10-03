@@ -10,13 +10,24 @@ from core.dependencies import get_current_user
 from core.environment_config import settings
 from core.functions import _safe_name
 from schemas.request.project_change import UploadResult
+from schemas.response.construction import (
+    OperationResult,
+    ProjectSummary,
+    ShiftHistoryEntry,
+    ShiftStatus,
+    WorkStage,
+)
 from schemas.user import UserInDB
 from services.foreman_service import ForemanService, get_foreman_service
 
 router = APIRouter(prefix="/api/foreman", tags=["foreman"])
 
 
-@router.get("/projects", status_code=status.HTTP_200_OK)
+@router.get(
+    "/projects",
+    status_code=status.HTTP_200_OK,
+    response_model=List[ProjectSummary],
+)
 async def get_projects(
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),
@@ -24,14 +35,22 @@ async def get_projects(
     return await service.list_projects(current_user.id)
 
 
-@router.get("/tasks", status_code=status.HTTP_200_OK)
+@router.get(
+    "/tasks",
+    status_code=status.HTTP_200_OK,
+    response_model=List[WorkStage],
+)
 async def get_tasks(
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),
 ):
     return await service.list_tasks(current_user.id)
 
-@router.post("/shift/start", status_code=status.HTTP_200_OK)
+@router.post(
+    "/shift/start",
+    status_code=status.HTTP_200_OK,
+    response_model=OperationResult,
+)
 async def start_shift(
     task_ids: List[str],
     subtask_ids: List[str],
@@ -42,7 +61,11 @@ async def start_shift(
     return {"result": "shift started"}
 
 
-@router.post("/shift/stop", status_code=status.HTTP_200_OK)
+@router.post(
+    "/shift/stop",
+    status_code=status.HTTP_200_OK,
+    response_model=OperationResult,
+)
 async def stop_shift(
     task_ids: List[str],
     subtask_ids: List[str],
@@ -53,7 +76,11 @@ async def stop_shift(
     return {"result": "shift stopped"}
 
 
-@router.get("/shift/history", status_code=status.HTTP_200_OK)
+@router.get(
+    "/shift/history",
+    status_code=status.HTTP_200_OK,
+    response_model=List[ShiftHistoryEntry],
+)
 async def shift_history(
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),
@@ -61,7 +88,11 @@ async def shift_history(
     return await service.shift_history(current_user.id)
 
 
-@router.get("/shift/status", status_code=status.HTTP_200_OK)
+@router.get(
+    "/shift/status",
+    status_code=status.HTTP_200_OK,
+    response_model=ShiftStatus,
+)
 async def shift_status(
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),

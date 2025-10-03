@@ -23,7 +23,6 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             size=100,
             _source=["project_id"]
         )
-        print([hit["_source"] for hit in resp["hits"]["hits"]])
         return [hit["_source"] for hit in resp["hits"]["hits"]]
 
     async def get_tasks(self) -> List[Dict[str, Any]]:
