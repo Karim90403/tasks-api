@@ -267,12 +267,10 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                 "work_stages.work_types.work_kind.tasks.subtasks.subtask_id",
                 "work_stages.work_types.work_kind.tasks.subtasks.subtask_name",
                 "work_stages.work_types.work_kind.tasks.subtasks.time_intervals",
-                "work_stages.work_types.tasks.task_id",
-                "work_stages.work_types.tasks.task_name",
-                "work_stages.work_types.tasks.time_intervals",
-                "work_stages.work_types.tasks.subtasks.subtask_id",
-                "work_stages.work_types.tasks.subtasks.subtask_name",
-                "work_stages.work_types.tasks.subtasks.time_intervals",
+                "work_stages.work_types.work_type_id",
+                "work_stages.work_types.work_type_name",
+                "work_stages.work_types.work_kind.work_kind_id",
+                "work_stages.work_types.work_kind.work_kind_name",
             ],
         )
 
