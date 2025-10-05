@@ -12,69 +12,85 @@ PUT construction
           "stage_id": { "type": "keyword" },
           "stage_name": { "type": "text" },
           "stage_status": { "type": "keyword" },
-          "tasks": {
+          "work_types": {
             "type": "nested",
             "properties": {
-              "task_id": { "type": "keyword" },
-              "task_name": { "type": "text" },
-              "task_description": { "type": "text" },
-              "task_status": { "type": "keyword" },
-              "time_intervals": {
+              "work_type_id": { "type": "keyword" },
+              "work_type_name": { "type": "text" },
+
+              "work_kind": {
                 "type": "nested",
                 "properties": {
-                  "start_time": { "type": "date" },
-                  "end_time": { "type": "date" },
-                  "status": { "type": "keyword" }
-                }
-              },
-              "subtasks": {
-                "type": "nested",
-                "properties": {
-                  "subtask_id": { "type": "keyword" },
-                  "subtask_name": { "type": "text" },
-                  "subtask_status": { "type": "keyword" },
-                  "subtask_description": { "type": "text" },
+                  "work_kind_id": { "type": "keyword" },
+                  "work_kind_name": { "type": "text" },
 
-                  /* старое assignees убрано */
-                  "brigade_id": { "type": "keyword" },
-
-                  /* опционально: snapshot состава на момент назначения */
-                  "brigade_snapshot": {
+                  "tasks": {
                     "type": "nested",
                     "properties": {
-                      "brigade_name": { "type": "text" },
-                      "members": {
+                      "task_id": { "type": "keyword" },
+                      "task_name": { "type": "text" },
+                      "task_description": { "type": "text" },
+                      "task_status": { "type": "keyword" },
+                      "time_intervals": {
                         "type": "nested",
                         "properties": {
-                          "user_id": { "type": "keyword" },
-                          "email": { "type": "keyword" }
+                          "start_time": { "type": "date" },
+                          "end_time": { "type": "date" },
+                          "status": { "type": "keyword" }
+                        }
+                      },
+                      "subtasks": {
+                        "type": "nested",
+                        "properties": {
+                          "subtask_id": { "type": "keyword" },
+                          "subtask_name": { "type": "text" },
+                          "subtask_status": { "type": "keyword" },
+                          "subtask_description": { "type": "text" },
+                          "brigade_id": { "type": "keyword" },
+                          "brigade_snapshot": {
+                            "type": "nested",
+                            "properties": {
+                              "brigade_name": { "type": "text" },
+                              "members": {
+                                "type": "nested",
+                                "properties": {
+                                  "user_id": { "type": "keyword" },
+                                  "email": { "type": "keyword" }
+                                }
+                              }
+                            }
+                          },
+
+                          "deadline": {
+                            "type": "nested",
+                            "properties": {
+                              "start_time": { "type": "date" },
+                              "end_time": { "type": "date" }
+                            }
+                          },
+                          "plannedQty": { "type": "float" },
+                          "actualQty": { "type": "float" },
+                          "machine": {
+                            "type": "object",
+                            "properties": {
+                              "hours": { "type": "float" },
+                              "number": { "type": "keyword" }
+                            }
+                          },
+                          "reportLinks": {
+                            "type": "nested",
+                            "properties": {
+                              "title": { "type": "text" },
+                              "href": { "type": "keyword" }
+                            }
+                          }
                         }
                       }
-                    }
-                  },
-
-                  "properties": {
-                    "start": { "type": "date" },
-                    "end": { "type": "date" }
-                  },
-                  "plannedQty": { "type": "float" },
-                  "actualQty": { "type": "float" },
-                  "machine": {
-                    "type": "object",
-                    "properties": {
-                      "hours": { "type": "float" },
-                      "number": { "type": "keyword" }
-                    }
-                  },
-                  "reportLinks": {
-                    "type": "nested",
-                    "properties": {
-                      "title": { "type": "text" },
-                      "href": { "type": "keyword" }
                     }
                   }
                 }
               }
+
             }
           }
         }
@@ -82,6 +98,7 @@ PUT construction
     }
   }
 }
+
 
 
 
@@ -96,33 +113,51 @@ POST construction/_doc/p1
       "stage_id": "s1",
       "stage_name": "Фундамент",
       "stage_status": "В работе",
-      "tasks": [
+      "work_types": [
         {
-          "task_id": "t1",
-          "task_name": "Подготовка площадки",
-          "task_description": "Очистка территории перед заливкой бетона",
-          "task_status": "Завершено",
-          "subtasks": [
+          "work_type_id": "wt1",
+          "work_type_name": "Подготовка места для заливки",
+          "work_kind": [
             {
-              "subtask_id": "st1",
-              "subtask_name": "Вывоз мусора",
-              "subtask_status": "Завершено",
-              "subtask_description": "Убрать строительный мусор",
-              "brigade_id": "b1",
-              "brigade_snapshot": {
-                "brigade_name": "Бригада А",
-                "members": [
-                  { "user_id": "worker1", "email": "w1@example.com" },
-                  { "user_id": "worker2", "email": "w2@example.com" }
-                ]
-              },
-              "deadline": { "start": "2025-08-16", "end": "2025-08-16"},
-              "plannedQty": 10,
-              "actualQty": 12,
-              "machine": { "hours": 5, "number": "123" },
-              "reportLinks": [ { "title": "Фото отчёт", "href": "http://example.com/report1" } ],
-              "time_intervals": [
-                { "start_time": "2025-08-16T08:00:00", "end_time": "2025-08-16T17:00:00", "status": "closed" }
+              "work_kind_id": "wk1",
+              "work_kind_name": "Подготовительные работы",
+              "tasks": [
+                {
+                  "task_id": "t1",
+                  "task_name": "Подготовка площадки",
+                  "task_description": "Очистка территории перед заливкой бетона",
+                  "task_status": "Завершено",
+
+                  "time_intervals": [
+                    { "start_time": "2025-08-16T08:00:00", "end_time": "2025-08-16T17:00:00", "status": "closed" }
+                  ],
+
+                  "subtasks": [
+                    {
+                      "subtask_id": "st1",
+                      "subtask_name": "Вывоз мусора",
+                      "subtask_status": "Завершено",
+                      "subtask_description": "Убрать строительный мусор",
+
+                      "brigade_id": "b1",
+                      "brigade_snapshot": {
+                        "brigade_name": "Бригада А",
+                        "members": [
+                          { "user_id": "worker1", "email": "w1@example.com" },
+                          { "user_id": "worker2", "email": "w2@example.com" }
+                        ]
+                      },
+
+                      "deadline": { "start_time": "2025-08-16T08:00:00", "end_time": "2025-08-16T17:00:00" },
+                      "plannedQty": 10,
+                      "actualQty": 12,
+                      "machine": { "hours": 5, "number": "123" },
+                      "reportLinks": [
+                        { "title": "Фото отчёт", "href": "http://example.com/report1" }
+                      ]
+                    }
+                  ]
+                }
               ]
             }
           ]

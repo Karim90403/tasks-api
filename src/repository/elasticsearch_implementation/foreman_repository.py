@@ -57,8 +57,19 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                         for (stage in ctx._source.work_stages) {
                             if (stage.work_types != null) {
                                 for (wtype in stage.work_types) {
+                                    def tasksList = [];
+                                    if (wtype.work_kind != null && !wtype.work_kind.isEmpty()) {
+                                        for (wkind in wtype.work_kind) {
+                                            if (wkind.tasks != null) {
+                                                tasksList.addAll(wkind.tasks);
+                                            }
+                                        }
+                                    }
                                     if (wtype.tasks != null) {
-                                        for (task in wtype.tasks) {
+                                        tasksList.addAll(wtype.tasks);
+                                    }
+                                    if (!tasksList.isEmpty()) {
+                                        for (task in tasksList) {
                                             // Обработка задач
                                             if (params.task_ids.contains(task.task_id)) {
                                                 if (task.time_intervals == null) {
@@ -82,7 +93,7 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                                                     updated = true;
                                                 }
                                             }
-            
+
                                             // Обработка подзадач
                                             if (task.subtasks != null && !task.subtasks.isEmpty()) {
                                                 for (sub in task.subtasks) {
@@ -151,8 +162,19 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                         for (stage in ctx._source.work_stages) {
                             if (stage.work_types != null) {
                                 for (wtype in stage.work_types) {
+                                    def tasksList = [];
+                                    if (wtype.work_kind != null && !wtype.work_kind.isEmpty()) {
+                                        for (wkind in wtype.work_kind) {
+                                            if (wkind.tasks != null) {
+                                                tasksList.addAll(wkind.tasks);
+                                            }
+                                        }
+                                    }
                                     if (wtype.tasks != null) {
-                                        for (task in wtype.tasks) {
+                                        tasksList.addAll(wtype.tasks);
+                                    }
+                                    if (!tasksList.isEmpty()) {
+                                        for (task in tasksList) {
                                             // Обработка задач
                                             if (params.task_ids.contains(task.task_id)) {
                                                 if (task.time_intervals != null && !task.time_intervals.isEmpty()) {
@@ -215,6 +237,12 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             _source=[
                 "project_id",
                 "project_name",
+                "work_stages.work_types.work_kind.tasks.task_id",
+                "work_stages.work_types.work_kind.tasks.task_name",
+                "work_stages.work_types.work_kind.tasks.time_intervals",
+                "work_stages.work_types.work_kind.tasks.subtasks.subtask_id",
+                "work_stages.work_types.work_kind.tasks.subtasks.subtask_name",
+                "work_stages.work_types.work_kind.tasks.subtasks.time_intervals",
                 "work_stages.work_types.tasks.task_id",
                 "work_stages.work_types.tasks.task_name",
                 "work_stages.work_types.tasks.time_intervals",
@@ -232,6 +260,8 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             size=1,
             query={"match": {"foreman_id": foreman_id}},
             _source=[
+                "work_stages.work_types.work_kind.tasks.time_intervals",
+                "work_stages.work_types.work_kind.tasks.subtasks.time_intervals",
                 "work_stages.work_types.tasks.time_intervals",
                 "work_stages.work_types.tasks.subtasks.time_intervals",
             ],
@@ -241,14 +271,26 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             ws = hit["_source"].get("work_stages", [])
             for stage in ws:
                 for wt in stage.get("work_types", []):
-                    for task in wt.get("tasks", []):
-                        for ti in task.get("time_intervals", []):
-                            if ti.get("end_time") in (None, "") or ti.get("status") == "active":
-                                return "working"
-                        for sub in task.get("subtasks", []):
-                            for ti in sub.get("time_intervals", []):
+                    work_kinds = wt.get("work_kind") or []
+                    if work_kinds:
+                        for wk in work_kinds:
+                            for task in wk.get("tasks", []):
+                                for ti in task.get("time_intervals", []):
+                                    if ti.get("end_time") in (None, "") or ti.get("status") == "active":
+                                        return "working"
+                                for sub in task.get("subtasks", []):
+                                    for ti in sub.get("time_intervals", []):
+                                        if ti.get("end_time") in (None, "") or ti.get("status") == "active":
+                                            return "working"
+                    else:
+                        for task in wt.get("tasks", []):
+                            for ti in task.get("time_intervals", []):
                                 if ti.get("end_time") in (None, "") or ti.get("status") == "active":
                                     return "working"
+                            for sub in task.get("subtasks", []):
+                                for ti in sub.get("time_intervals", []):
+                                    if ti.get("end_time") in (None, "") or ti.get("status") == "active":
+                                        return "working"
         return "not_working"
 
     async def add_report_links(
@@ -256,12 +298,13 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             project_id: str,
             stage_id: str,
             work_type_id: str,
+            work_kind_id: str,
             task_id: str,
             subtask_id: str,
             links: List[Dict[str, str]],
     ) -> Dict[str, Any]:
         """
-        Добавляет элементы в work_stages[].tasks[].subtasks[].reportLinks для одного проекта.
+        Добавляет элементы в work_stages[].work_types[].work_kind[].tasks[].subtasks[].reportLinks.
         links: [{ "title": "...", "href": "..."}, ...]
         """
         try:
@@ -276,12 +319,23 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
         if not stage:
             return {"result": "stage_not_found", "stage_id": stage_id}
 
-        wt = stage.get("work_stages", [])
-        work_type = next((s for s in wt if s.get("stage_id") == work_type_id), None)
+        wt = stage.get("work_types", [])
+        work_type = next((s for s in wt if s.get("work_type_id") == work_type_id), None)
         if not work_type:
             return {"result": "work_type_not_found", "work_type_id": work_type_id}
 
-        tasks = work_type.get("tasks", [])
+        tasks: List[Dict[str, Any]]
+        work_kinds = work_type.get("work_kind") or []
+        if work_kinds:
+            work_kind = next((wk for wk in work_kinds if wk.get("work_kind_id") == work_kind_id), None)
+            if not work_kind:
+                return {"result": "work_kind_not_found", "work_kind_id": work_kind_id}
+            tasks = work_kind.get("tasks", [])
+        else:
+            tasks = work_type.get("tasks", [])
+            if work_kind_id:
+                return {"result": "work_kind_not_available", "work_kind_id": work_kind_id}
+
         task = next((t for t in tasks if t.get("task_id") == task_id), None)
         if not task:
             return {"result": "task_not_found", "task_id": task_id}
@@ -295,9 +349,6 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
         if rlinks is None or not isinstance(rlinks, list):
             rlinks = []
             subtask["reportLinks"] = rlinks
-
-        from datetime import datetime, timezone
-        uploaded_at = datetime.now(timezone.utc).isoformat()
 
         for link in links:
             enriched = {

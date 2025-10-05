@@ -109,6 +109,7 @@ async def upload_project_files(
     project_id: str,
     stage_id: str,
     work_type_id: str,
+    work_kind_id: str,
     task_id: str,
     subtask_id: str,
     files: List[UploadFile] = File(...),
@@ -147,6 +148,8 @@ async def upload_project_files(
                 url=rel_url,
                 content_type=f.content_type or "application/octet-stream",
                 stage_id=stage_id,
+                work_type_id=work_type_id,
+                work_kind_id=work_kind_id,
                 task_id=task_id,
                 subtask_id=subtask_id,
             )
@@ -160,12 +163,24 @@ async def upload_project_files(
         project_id=project_id,
         stage_id=stage_id,
         work_type_id=work_type_id,
+        work_kind_id=work_kind_id,
         task_id=task_id,
         subtask_id=subtask_id,
         links=new_links,
     )
 
-    if updated.get("result") == "not_found":
-        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    result_flag = updated.get("result")
+    not_found_flags = {
+        "not_found",
+        "stage_not_found",
+        "work_type_not_found",
+        "work_kind_not_found",
+        "task_not_found",
+        "subtask_not_found",
+    }
+    if result_flag in not_found_flags:
+        raise HTTPException(status_code=404, detail=result_flag)
+    if result_flag == "work_kind_not_available":
+        raise HTTPException(status_code=400, detail="work_kind_missing_in_document")
 
     return results

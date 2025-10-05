@@ -19,6 +19,11 @@ class DateRange(BaseModel):
     end: Optional[date] = Field(None, description="Дата окончания")
 
 
+class DeadlineRange(BaseModel):
+    start_time: Optional[date] = Field(None, description="Дата начала дедлайна")
+    end_time: Optional[date] = Field(None, description="Дата окончания дедлайна")
+
+
 class MachineInfo(BaseModel):
     hours: Optional[float] = Field(None, description="Количество часов работы техники")
     number: Optional[str] = Field(None, description="Идентификатор или номер техники")
@@ -44,6 +49,7 @@ class Subtask(BaseModel):
         None, description="Состав бригады на момент назначения"
     )
     properties: Optional[DateRange] = Field(None, description="Плановые даты выполнения")
+    deadline: Optional[DeadlineRange] = Field(None, description="Дедлайн выполнения подзадачи")
     plannedQty: Optional[float] = Field(None, description="Плановый объём работ")
     actualQty: Optional[float] = Field(None, description="Фактический объём работ")
     machine: Optional[MachineInfo] = Field(None, description="Информация о задействованной технике")
@@ -54,10 +60,19 @@ class Subtask(BaseModel):
     def _merge_deadline(cls, values: dict) -> dict:
         deadline = values.get("deadline")
         properties = values.get("properties")
-        if properties is None and deadline is not None:
-            values["properties"] = deadline
-        elif deadline is None and properties is not None:
-            values["deadline"] = properties
+        if properties is None and isinstance(deadline, dict):
+            if {"start", "end"}.issubset(deadline.keys()):
+                values["properties"] = deadline
+            else:
+                values["properties"] = {
+                    "start": deadline.get("start_time"),
+                    "end": deadline.get("end_time"),
+                }
+        if deadline is None and isinstance(properties, dict):
+            values["deadline"] = {
+                "start_time": properties.get("start"),
+                "end_time": properties.get("end"),
+            }
         return values
 
     class Config:
@@ -80,7 +95,20 @@ class WorkType(BaseModel):
     work_type_id: Optional[str] = Field(None, description="Идентификатор вида работ")
     work_type_name: Optional[str] = Field(None, description="Название вида работ")
     work_type_status: Optional[str] = Field(None, description="Статус вида работ")
-    tasks: List[Task] = Field(default_factory=list, description="Задачи вида работ")
+    work_kind: List["WorkKind"] = Field(
+        default_factory=list,
+        description="Типы работ внутри вида работ",
+    )
+    tasks: List[Task] = Field(default_factory=list, description="Задачи вида работ (устаревшее поле)")
+
+    class Config:
+        extra = "allow"
+
+
+class WorkKind(BaseModel):
+    work_kind_id: Optional[str] = Field(None, description="Идентификатор типа работ")
+    work_kind_name: Optional[str] = Field(None, description="Название типа работ")
+    tasks: List[Task] = Field(default_factory=list, description="Задачи типа работ")
 
     class Config:
         extra = "allow"
@@ -111,9 +139,11 @@ class ConstructionProject(BaseModel):
 
 class ProjectSummary(BaseModel):
     project_id: str = Field(..., description="Идентификатор проекта")
+    project_name: Optional[str] = Field(None, description="Название проекта")
 
 class StageWithProject(WorkStage):
     project_id: str = Field(..., description="Идентификатор проекта")
+    project_name: Optional[str] = Field(None, description="Название проекта")
 
     class Config:
         extra = "allow"
@@ -124,6 +154,10 @@ class ShiftEntryBase(BaseModel):
     project_name: Optional[str] = Field(None, description="Название проекта")
     task_id: Optional[str] = Field(None, description="Идентификатор задачи")
     task_name: Optional[str] = Field(None, description="Название задачи")
+    work_type_id: Optional[str] = Field(None, description="Идентификатор вида работ")
+    work_type_name: Optional[str] = Field(None, description="Название вида работ")
+    work_kind_id: Optional[str] = Field(None, description="Идентификатор типа работ")
+    work_kind_name: Optional[str] = Field(None, description="Название типа работ")
     start_time: Optional[datetime] = Field(None, description="Начало работы")
     end_time: Optional[datetime] = Field(None, description="Окончание работы")
     status: Optional[str] = Field(None, description="Статус интервала")
@@ -154,6 +188,7 @@ class OperationResult(BaseModel):
         extra = "allow"
 
 
+WorkKind.update_forward_refs()
 WorkType.update_forward_refs()
 WorkStage.update_forward_refs()
 ConstructionProject.update_forward_refs()

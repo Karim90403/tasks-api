@@ -21,7 +21,7 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
         resp = await self.client.search(
             index=self.index,
             size=100,
-            _source=["project_id"]
+            _source=["project_id", "project_name"]
         )
         return [hit["_source"] for hit in resp["hits"]["hits"]]
 
@@ -48,6 +48,12 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             _source=[
                 "project_id",
                 "project_name",
+                "work_stages.work_types.work_kind.tasks.task_id",
+                "work_stages.work_types.work_kind.tasks.task_name",
+                "work_stages.work_types.work_kind.tasks.time_intervals",
+                "work_stages.work_types.work_kind.tasks.subtasks.subtask_id",
+                "work_stages.work_types.work_kind.tasks.subtasks.subtask_name",
+                "work_stages.work_types.work_kind.tasks.subtasks.time_intervals",
                 "work_stages.work_types.tasks.task_id",
                 "work_stages.work_types.tasks.task_name",
                 "work_stages.work_types.tasks.time_intervals",
