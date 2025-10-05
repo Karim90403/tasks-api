@@ -23,12 +23,12 @@ class ManagerService:
         projects = await self.repo.get_projects()
         return [ProjectSummary.parse_obj(project) for project in projects]
 
-    async def list_tasks(self) -> List[StageWithProject]:
-        stages = await self.repo.get_tasks()
+    async def list_tasks(self, project_id: str) -> List[StageWithProject]:
+        stages = await self.repo.get_tasks(project_id)
         return [StageWithProject.parse_obj(stage) for stage in stages]
 
-    async def shift_history(self) -> List[ShiftHistoryEntry]:
-        history = await self.repo.get_shift_history()
+    async def shift_history(self, project_id: str) -> List[ShiftHistoryEntry]:
+        history = await self.repo.get_shift_history(project_id)
         parsed: List[ShiftHistoryEntry] = []
         for item in history:
             entry_type = item.get("type")

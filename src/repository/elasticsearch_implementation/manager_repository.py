@@ -25,26 +25,28 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
         )
         return [hit["_source"] for hit in resp["hits"]["hits"]]
 
-    async def get_tasks(self) -> List[Dict[str, Any]]:
+    async def get_tasks(self, project_id: str) -> List[Dict[str, Any]]:
         resp = await self.client.search(
             index=self.index,
             size=100,
+            query={"term": {"project_id": project_id}},
             _source=["work_stages", "project_id", "project_name"]
         )
+        print(resp["hits"]["hits"])
         results = []
         for hit in resp["hits"]["hits"]:
             ws = hit["_source"].get("work_stages", [])
             project_id = hit["_source"].get("project_id", "")
-            project_name = hit["_source"].get("project_name", "")
             for stage in ws:
-                results.append(dict(project_id=project_id, project_name=project_name,**stage))
+                results.append(dict(project_id=project_id, **stage))
         return results
 
 
-    async def get_shift_history(self) -> List[Dict[str, Any]]:
+    async def get_shift_history(self, project_id: str) -> List[Dict[str, Any]]:
         resp = await self.client.search(
             index=self.index,
             size=100,
+            query={"term": {"project_id": project_id}},
             _source=[
                 "project_id",
                 "project_name",
@@ -93,16 +95,8 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             if is_index:
                 idx = int(part)
                 if not isinstance(cur, list):
-                    # превращаем текущий узел в список (если там ничего, делаем список)
-                    # если это dict — заменяем его на список (см. ниже комментарий)
-                    # аккуратнее: если cur — dict, то это означает, что предыдущий шаг создал dict,
-                    # нужно перевести его в список на уровне родителя — для простоты считаем,
-                    # что ключ уже был списком; в реальных данных это обычно корректно.
                     new_list = []
-                    # если был dict, мы его "теряем", потому что целимся в массив
-                    # но такой кейс встречается редко; при необходимости можно
-                    # усложнить логику, чтобы хранить и dict и list.
-                    cur.clear()  # на всякий случай очищаем
+                    cur.clear()
                     cur = new_list  # NOTE: см. пояснение ниже
                 cls._ensure_list_size(cur, idx)
                 if is_last:
@@ -138,10 +132,8 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
 
         src = got["_source"]
 
-        # модифицируем на месте
         self._set_by_path(src, key, value)
 
-        # перезаписываем документ (id тот же)
         resp = await self.client.index(
             index=self.index,
             id=project_id,

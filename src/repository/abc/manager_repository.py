@@ -8,11 +8,11 @@ class ABCManagerRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_tasks(self) -> List[Dict[str, Any]]:
+    async def get_tasks(self, project_id: str) -> List[Dict[str, Any]]:
         ...
 
     @abstractmethod
-    async def get_shift_history(self) -> List[Dict[str, Any]]:
+    async def get_shift_history(self, project_id: str) -> List[Dict[str, Any]]:
         ...
 
     @abstractmethod

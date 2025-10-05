@@ -192,6 +192,7 @@ PUT users
         "type": "keyword",
         "normalizer": "lowercase_norm"
       },
+      "managed_projects": { "type": "keyword" },
       "hashed_password": { "type": "keyword" },
       "role": { "type": "keyword" },
       "is_active": { "type": "boolean" },
@@ -206,9 +207,9 @@ DELETE users
 DELETE construction
 GET construction/_search
 
-GET construction/_refresh
+GET construction/_search
 
-POST users/_update/12c79727-ebd2-40c3-a31b-3bfefff7a7cb
+POST users/_update/0d2d6c94-377a-46c8-9051-842bb1330bcc
 {
   "doc": {
     "role": "root"

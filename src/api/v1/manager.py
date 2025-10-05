@@ -59,23 +59,25 @@ async def change_project(
 
 
 @router.get(
-    "/tasks",
+    "/projects/{project_id}/tasks",
     status_code=status.HTTP_200_OK,
     response_model=List[StageWithProject],
-    dependencies=[Depends(check_project_access)],
 )
 async def get_tasks(
+        project_id: str,
         service: ManagerService = Depends(get_manager_service),
+        current_user: UserInDB = Depends(check_project_access),
     ):
-    return await service.list_tasks()
+    return await service.list_tasks(project_id)
 
 @router.get(
-    "/shifts",
+    "/projects/{project_id}/shifts",
     status_code=status.HTTP_200_OK,
     response_model=List[ShiftHistoryEntry],
     dependencies=[Depends(check_project_access)],
 )
 async def get_all_shifts(
+        project_id: str,
         service: ManagerService = Depends(get_manager_service),
 ):
-    return await service.shift_history()
+    return await service.shift_history(project_id)

@@ -139,11 +139,9 @@ class ConstructionProject(BaseModel):
 
 class ProjectSummary(BaseModel):
     project_id: str = Field(..., description="Идентификатор проекта")
-    project_name: Optional[str] = Field(None, description="Название проекта")
 
 class StageWithProject(WorkStage):
     project_id: str = Field(..., description="Идентификатор проекта")
-    project_name: Optional[str] = Field(None, description="Название проекта")
 
     class Config:
         extra = "allow"
@@ -151,7 +149,6 @@ class StageWithProject(WorkStage):
 
 class ShiftEntryBase(BaseModel):
     project_id: Optional[str] = Field(None, description="Идентификатор проекта")
-    project_name: Optional[str] = Field(None, description="Название проекта")
     task_id: Optional[str] = Field(None, description="Идентификатор задачи")
     task_name: Optional[str] = Field(None, description="Название задачи")
     work_type_id: Optional[str] = Field(None, description="Идентификатор вида работ")
