@@ -32,7 +32,7 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             query={"term": {"project_id": project_id}},
             _source=["work_stages", "project_id", "project_name"]
         )
-        print(resp["hits"]["hits"])
+
         results = []
         for hit in resp["hits"]["hits"]:
             ws = hit["_source"].get("work_stages", [])

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import datetime
 from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, root_validator
@@ -15,13 +15,13 @@ class TimeInterval(BaseModel):
 
 
 class DateRange(BaseModel):
-    start: Optional[date] = Field(None, description="Дата начала")
-    end: Optional[date] = Field(None, description="Дата окончания")
+    start: Optional[datetime] = Field(None, description="Дата начала")
+    end: Optional[datetime] = Field(None, description="Дата окончания")
 
 
 class DeadlineRange(BaseModel):
-    start_time: Optional[date] = Field(None, description="Дата начала дедлайна")
-    end_time: Optional[date] = Field(None, description="Дата окончания дедлайна")
+    start_time: Optional[datetime] = Field(None, description="Дата начала дедлайна")
+    end_time: Optional[datetime] = Field(None, description="Дата окончания дедлайна")
 
 
 class MachineInfo(BaseModel):

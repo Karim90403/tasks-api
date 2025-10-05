@@ -22,18 +22,18 @@ class ForemanService:
         projects = await self.repo.get_projects(foreman_id)
         return [ProjectSummary.parse_obj(project) for project in projects]
 
-    async def list_tasks(self, foreman_id: str) -> List[WorkStage]:
-        tasks = await self.repo.get_tasks(foreman_id)
+    async def list_tasks(self, foreman_id: str, project_id: str) -> List[WorkStage]:
+        tasks = await self.repo.get_tasks(foreman_id, project_id)
         return [WorkStage.parse_obj(stage) for stage in tasks]
 
-    async def start_shift(self, foreman_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
-        return await self.repo.start_shift(foreman_id, task_ids, subtask_ids)
+    async def start_shift(self, foreman_id: str, project_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
+        return await self.repo.start_shift(foreman_id, project_id, task_ids, subtask_ids)
 
-    async def stop_shift(self, foreman_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
-        return await self.repo.stop_shift(foreman_id, task_ids, subtask_ids)
+    async def stop_shift(self, foreman_id: str, project_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
+        return await self.repo.stop_shift(foreman_id, project_id, task_ids, subtask_ids)
 
-    async def shift_history(self, foreman_id: str) -> List[ShiftHistoryEntry]:
-        history = await self.repo.get_shift_history(foreman_id)
+    async def shift_history(self, foreman_id: str, project_id: str) -> List[ShiftHistoryEntry]:
+        history = await self.repo.get_shift_history(foreman_id, project_id)
         parsed: List[ShiftHistoryEntry] = []
         for item in history:
             entry_type = item.get("type")
@@ -45,8 +45,8 @@ class ForemanService:
                 parsed.append(TaskShiftEntry.parse_obj(item))
         return parsed
 
-    async def shift_status(self, foreman_id: str) -> ShiftStatus:
-        status = await self.repo.get_shift_status(foreman_id)
+    async def shift_status(self, foreman_id: str, project_id: str) -> ShiftStatus:
+        status = await self.repo.get_shift_status(foreman_id, project_id)
         return ShiftStatus(status=status)
 
     async def add_report_links(

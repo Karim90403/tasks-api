@@ -28,11 +28,18 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
         )
         return [hit["_source"] for hit in resp["hits"]["hits"]]
 
-    async def get_tasks(self, foreman_id: str) -> List[Dict[str, Any]]:
+    async def get_tasks(self, foreman_id: str, project_id: str) -> List[Dict[str, Any]]:
         resp = await self.client.search(
             index=self.index,
             size=100,
-            query={"term": {"foreman_id": foreman_id}},
+            query={
+                "bool": {
+                    "must": [
+                        {"term": {"foreman_id": foreman_id}},
+                        {"term": {"project_id": project_id}},
+                    ]
+                }
+            },
             _source=["work_stages"],
             request_timeout=self.timeout,
         )
@@ -43,11 +50,16 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
                 results.append(stage)
         return results
 
-    async def start_shift(self, foreman_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
+    async def start_shift(self, foreman_id: str, project_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
         now = datetime.now(timezone.utc).isoformat()
         body = {
             "query": {
-                "match": {"foreman_id": foreman_id}
+                "bool": {
+                    "must": [
+                        {"term": {"foreman_id": foreman_id}},
+                        {"term": {"project_id": project_id}},
+                    ]
+                }
             },
             "script": {
                 "source": """
@@ -148,11 +160,16 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             print(f"Elasticsearch error: {e}")
             raise
 
-    async def stop_shift(self, foreman_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
+    async def stop_shift(self, foreman_id: str, project_id: str, task_ids: List[str], subtask_ids: List[str]) -> None:
         now = datetime.now(timezone.utc).isoformat()
         body = {
             "query": {
-                "match": {"foreman_id": foreman_id}
+                "bool": {
+                    "must": [
+                        {"term": {"foreman_id": foreman_id}},
+                        {"term": {"project_id": project_id}},
+                    ]
+                }
             },
             "script": {
                 "source": """
@@ -229,11 +246,18 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
             print(f"Elasticsearch error: {e}")
             raise
 
-    async def get_shift_history(self, foreman_id: str) -> List[Dict[str, Any]]:
+    async def get_shift_history(self, foreman_id: str, project_id: str) -> List[Dict[str, Any]]:
         resp = await self.client.search(
             index=self.index,
             size=50,
-            query={"match": {"foreman_id": foreman_id}},
+            query={
+                "bool": {
+                    "must": [
+                        {"term": {"foreman_id": foreman_id}},
+                        {"term": {"project_id": project_id}},
+                    ]
+                }
+            },
             _source=[
                 "project_id",
                 "project_name",
@@ -254,11 +278,18 @@ class ElasticForemanRepository(ABCForemanRepository, BaseElasticRepository):
 
         return self.parse_shift_history(resp["hits"]["hits"])
 
-    async def get_shift_status(self, foreman_id: str) -> str:
+    async def get_shift_status(self, foreman_id: str, project_id: str) -> str:
         resp = await self.client.search(
             index=self.index,
             size=1,
-            query={"match": {"foreman_id": foreman_id}},
+            query={
+                "bool": {
+                    "must": [
+                        {"term": {"foreman_id": foreman_id}},
+                        {"term": {"project_id": project_id}},
+                    ]
+                }
+            },
             _source=[
                 "work_stages.work_types.work_kind.tasks.time_intervals",
                 "work_stages.work_types.work_kind.tasks.subtasks.time_intervals",

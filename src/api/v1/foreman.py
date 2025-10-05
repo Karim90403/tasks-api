@@ -36,68 +36,73 @@ async def get_projects(
 
 
 @router.get(
-    "/tasks",
+    "/projects/{project_id}/tasks",
     status_code=status.HTTP_200_OK,
     response_model=List[WorkStage],
 )
 async def get_tasks(
+    project_id: str,
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),
 ):
-    return await service.list_tasks(current_user.id)
+    return await service.list_tasks(current_user.id, project_id)
 
 @router.post(
-    "/shift/start",
+    "/projects/{project_id}/shift/start",
     status_code=status.HTTP_200_OK,
     response_model=OperationResult,
 )
 async def start_shift(
+    project_id: str,
     task_ids: List[str],
     subtask_ids: List[str],
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),
 ):
-    await service.start_shift(current_user.id, task_ids, subtask_ids)
+    await service.start_shift(current_user.id, project_id, task_ids, subtask_ids)
     return {"result": "shift started"}
 
 
 @router.post(
-    "/shift/stop",
+    "/projects/{project_id}/shift/stop",
     status_code=status.HTTP_200_OK,
     response_model=OperationResult,
 )
 async def stop_shift(
+    project_id: str,
     task_ids: List[str],
     subtask_ids: List[str],
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),
 ):
-    await service.stop_shift(current_user.id, task_ids, subtask_ids)
+    await service.stop_shift(current_user.id, project_id, task_ids, subtask_ids)
     return {"result": "shift stopped"}
 
 
 @router.get(
-    "/shift/history",
+    "/projects/{project_id}/shift/history",
     status_code=status.HTTP_200_OK,
     response_model=List[ShiftHistoryEntry],
 )
 async def shift_history(
+    project_id: str,
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),
 ):
-    return await service.shift_history(current_user.id)
+    return await service.shift_history(current_user.id, project_id)
 
 
 @router.get(
-    "/shift/status",
+    "/projects/{project_id}/shift/status",
     status_code=status.HTTP_200_OK,
     response_model=ShiftStatus,
 )
 async def shift_status(
+    project_id: str,
     service: ForemanService = Depends(get_foreman_service),
     current_user: UserInDB = Depends(get_current_user),
 ):
-    return await service.shift_status(current_user.id)
+    return await service.shift_status(current_user.id, project_id)
 
 @router.post(
     "/projects/{project_id}/files",
