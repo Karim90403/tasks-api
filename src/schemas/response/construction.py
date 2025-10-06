@@ -91,24 +91,23 @@ class Task(BaseModel):
         extra = "allow"
 
 
-class WorkType(BaseModel):
-    work_type_id: Optional[str] = Field(None, description="Идентификатор вида работ")
-    work_type_name: Optional[str] = Field(None, description="Название вида работ")
-    work_type_status: Optional[str] = Field(None, description="Статус вида работ")
-    work_kind: List["WorkKind"] = Field(
+class WorkKind(BaseModel):
+    work_kind_id: Optional[str] = Field(None, description="Идентификатор типа работ")
+    work_kind_name: Optional[str] = Field(None, description="Название типа работ")
+    work_types: List["WorkType"] = Field(
         default_factory=list,
-        description="Типы работ внутри вида работ",
+        description="Виды работ внутри типа работ",
     )
-    tasks: List[Task] = Field(default_factory=list, description="Задачи вида работ (устаревшее поле)")
 
     class Config:
         extra = "allow"
 
 
-class WorkKind(BaseModel):
-    work_kind_id: Optional[str] = Field(None, description="Идентификатор типа работ")
-    work_kind_name: Optional[str] = Field(None, description="Название типа работ")
-    tasks: List[Task] = Field(default_factory=list, description="Задачи типа работ")
+class WorkType(BaseModel):
+    work_type_id: Optional[str] = Field(None, description="Идентификатор вида работ")
+    work_type_name: Optional[str] = Field(None, description="Название вида работ")
+    work_type_status: Optional[str] = Field(None, description="Статус вида работ")
+    tasks: List[Task] = Field(default_factory=list, description="Задачи вида работ")
 
     class Config:
         extra = "allow"
@@ -118,8 +117,8 @@ class WorkStage(BaseModel):
     stage_id: str = Field(..., description="Идентификатор этапа")
     stage_name: Optional[str] = Field(None, description="Название этапа")
     stage_status: Optional[str] = Field(None, description="Статус этапа")
-    work_types: List[WorkType] = Field(
-        default_factory=list, description="Детализация по видам работ (если присутствует)"
+    work_kinds: List[WorkKind] = Field(
+        default_factory=list, description="Детализация по типам работ"
     )
 
     class Config:

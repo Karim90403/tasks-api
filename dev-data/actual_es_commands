@@ -12,17 +12,18 @@ PUT construction
           "stage_id": { "type": "keyword" },
           "stage_name": { "type": "text" },
           "stage_status": { "type": "keyword" },
-          "work_types": {
+          "work_kinds": {
             "type": "nested",
             "properties": {
-              "work_type_id": { "type": "keyword" },
-              "work_type_name": { "type": "text" },
+              "work_kind_id": { "type": "keyword" },
+              "work_kind_name": { "type": "text" },
 
-              "work_kind": {
+              "work_types": {
                 "type": "nested",
                 "properties": {
-                  "work_kind_id": { "type": "keyword" },
-                  "work_kind_name": { "type": "text" },
+                  "work_type_id": { "type": "keyword" },
+                  "work_type_name": { "type": "text" },
+                  "work_type_status": { "type": "keyword" },
 
                   "tasks": {
                     "type": "nested",
@@ -113,14 +114,15 @@ POST construction/_doc/p1
       "stage_id": "s1",
       "stage_name": "Фундамент",
       "stage_status": "В работе",
-      "work_types": [
+      "work_kinds": [
         {
-          "work_type_id": "wt1",
-          "work_type_name": "Подготовка места для заливки",
-          "work_kind": [
+          "work_kind_id": "wk1",
+          "work_kind_name": "Подготовительные работы",
+          "work_types": [
             {
-              "work_kind_id": "wk1",
-              "work_kind_name": "Подготовительные работы",
+              "work_type_id": "wt1",
+              "work_type_name": "Подготовка места для заливки",
+              "work_type_status": "active",
               "tasks": [
                 {
                   "task_id": "t1",
