@@ -38,9 +38,15 @@ class BrigadeSnapshot(BaseModel):
     brigade_name: Optional[str] = Field(None, description="Имя бригады на момент назначения")
     members: List[BrigadeMember] = Field(default_factory=list, description="Состав бригады")
 
+class Unit(BaseModel):
+    available_units: List[str] = Field([], description="Список едениц измерения")
+    selected_unit: Optional[str] = Field(None, description="Выбраная еденицы измерения")
+
+    class Config:
+        extra = "allow"
 
 class Subtask(BaseModel):
-    subtask_id: str = Field(..., description="Идентификатор подзадачи")
+    subtask_id: str = Field("", description="Идентификатор подзадачи")
     subtask_name: Optional[str] = Field(None, description="Название подзадачи")
     subtask_status: Optional[str] = Field(None, description="Статус подзадачи")
     subtask_description: Optional[str] = Field(None, description="Описание подзадачи")
@@ -52,6 +58,7 @@ class Subtask(BaseModel):
     deadline: Optional[DeadlineRange] = Field(None, description="Дедлайн выполнения подзадачи")
     plannedQty: Optional[float] = Field(None, description="Плановый объём работ")
     actualQty: Optional[float] = Field(None, description="Фактический объём работ")
+    unit: Optional[Unit] = Field(None, description="Еденицы измерения")
     machine: Optional[MachineInfo] = Field(None, description="Информация о задействованной технике")
     reportLinks: List[ReportLink] = Field(default_factory=list, description="Ссылки на отчёты")
     time_intervals: List[TimeInterval] = Field(default_factory=list, description="Интервалы работы по подзадаче")
@@ -78,9 +85,8 @@ class Subtask(BaseModel):
     class Config:
         extra = "allow"
 
-
 class Task(BaseModel):
-    task_id: str = Field(..., description="Идентификатор задачи")
+    task_id: str = Field("", description="Идентификатор задачи")
     task_name: Optional[str] = Field(None, description="Название задачи")
     task_description: Optional[str] = Field(None, description="Описание задачи")
     task_status: Optional[str] = Field(None, description="Статус задачи")
@@ -106,6 +112,7 @@ class WorkKind(BaseModel):
 class WorkType(BaseModel):
     work_type_id: Optional[str] = Field(None, description="Идентификатор вида работ")
     work_type_name: Optional[str] = Field(None, description="Название вида работ")
+    work_type_doc: Optional[str] = Field(None, description="Ссылка на документацию")
     work_type_status: Optional[str] = Field(None, description="Статус вида работ")
     tasks: List[Task] = Field(default_factory=list, description="Задачи вида работ")
 
@@ -114,7 +121,7 @@ class WorkType(BaseModel):
 
 
 class WorkStage(BaseModel):
-    stage_id: str = Field(..., description="Идентификатор этапа")
+    stage_id: str = Field("", description="Идентификатор этапа")
     stage_name: Optional[str] = Field(None, description="Название этапа")
     stage_status: Optional[str] = Field(None, description="Статус этапа")
     work_kinds: List[WorkKind] = Field(
@@ -126,7 +133,7 @@ class WorkStage(BaseModel):
 
 
 class ConstructionProject(BaseModel):
-    project_id: str = Field(..., description="Идентификатор проекта")
+    project_id: str = Field("", description="Идентификатор проекта")
     project_name: Optional[str] = Field(None, description="Название проекта")
     foreman_id: Optional[str] = Field(None, description="Идентификатор прораба")
     foreman_email: Optional[str] = Field(None, description="Email прораба")
@@ -137,10 +144,10 @@ class ConstructionProject(BaseModel):
 
 
 class ProjectSummary(BaseModel):
-    project_id: str = Field(..., description="Идентификатор проекта")
+    project_id: str = Field("", description="Идентификатор проекта")
 
 class StageWithProject(WorkStage):
-    project_id: str = Field(..., description="Идентификатор проекта")
+    project_id: str = Field("", description="Идентификатор проекта")
 
     class Config:
         extra = "allow"
@@ -173,11 +180,19 @@ ShiftHistoryEntry = Union[TaskShiftEntry, SubtaskShiftEntry]
 
 
 class ShiftStatus(BaseModel):
-    status: Literal["working", "not_working"] = Field(..., description="Текущий статус смены")
+    status: Literal["working", "not_working"] = Field("working", description="Текущий статус смены")
+
+
+class TaskSearchResult(BaseModel):
+    id: str = Field("", description="Идентификатор задачи или подзадачи")
+    type: Literal["task", "subtask"] = Field("task", description="Тип найденного объекта")
+    full_name: str = Field("", description="Полное имя с учётом иерархии проекта")
+    description: Optional[str] = Field(None, description="Описание задачи или подзадачи")
+    project_id: Optional[str] = Field(None, description="Идентификатор проекта")
 
 
 class OperationResult(BaseModel):
-    result: str = Field(..., description="Результат операции")
+    result: str = Field("", description="Результат операции")
     project_id: Optional[str] = Field(None, description="Идентификатор проекта, если применимо")
 
     class Config:

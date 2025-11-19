@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from core.dependencies import check_project_access, get_current_user
 from schemas.request.project_change import ChangeProjectRequest
@@ -10,6 +10,7 @@ from schemas.response.construction import (
     ProjectSummary,
     ShiftHistoryEntry,
     StageWithProject,
+    TaskSearchResult,
 )
 from schemas.user import UserInDB
 from services.manager_service import ManagerService, get_manager_service
@@ -69,6 +70,27 @@ async def get_tasks(
         current_user: UserInDB = Depends(check_project_access),
     ):
     return await service.list_tasks(project_id)
+
+
+@router.get(
+    "/tasks/search",
+    status_code=status.HTTP_200_OK,
+    response_model=List[TaskSearchResult],
+)
+async def search_tasks(
+    name: str = Query("", min_length=1, description="Часть названия или описания задачи/подзадачи"),
+    size: int = Query(20, gt=0, le=100, description="Максимальное число результатов"),
+    service: ManagerService = Depends(get_manager_service),
+    current_user: UserInDB = Depends(get_current_user),
+):
+    allowed_projects = None
+    if current_user.role == "project_manager":
+        allowed_projects = current_user.managed_projects or []
+        if not allowed_projects:
+            return []
+    elif current_user.role != "root":
+        return []
+    return await service.search_tasks(name, size=size, project_ids=allowed_projects)
 
 @router.get(
     "/projects/{project_id}/shifts",

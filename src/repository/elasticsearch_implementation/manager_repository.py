@@ -1,5 +1,6 @@
+import json
 from functools import lru_cache
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from elasticsearch._async.client import AsyncElasticsearch
 from elasticsearch.exceptions import NotFoundError
@@ -21,7 +22,8 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
         resp = await self.client.search(
             index=self.index,
             size=100,
-            _source=["project_id", "project_name"]
+            _source=["project_id", "project_name"],
+            request_timeout=self.timeout,
         )
         return [hit["_source"] for hit in resp["hits"]["hits"]]
 
@@ -30,17 +32,17 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             index=self.index,
             size=100,
             query={"term": {"project_id": project_id}},
-            _source=["work_stages", "project_id", "project_name"]
+            _source=["work_stages", "project_id", "project_name"],
+            request_timeout=self.timeout,
         )
 
-        results = []
+        results: List[Dict[str, Any]] = []
         for hit in resp["hits"]["hits"]:
             ws = hit["_source"].get("work_stages", [])
             project_id = hit["_source"].get("project_id", "")
             for stage in ws:
                 results.append(dict(project_id=project_id, **stage))
         return results
-
 
     async def get_shift_history(self, project_id: str) -> List[Dict[str, Any]]:
         resp = await self.client.search(
@@ -61,8 +63,49 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
                 "work_stages.work_kinds.work_kind_id",
                 "work_stages.work_kinds.work_kind_name",
             ],
+            request_timeout=self.timeout,
         )
         return self.parse_shift_history(resp["hits"]["hits"])
+
+    async def search_tasks(
+        self,
+        name: str,
+        size: int = 20,
+        project_ids: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        query = name.strip()
+        if not query:
+            return []
+
+        limit = max(1, min(size, 100))
+        body = {
+            "size": limit,
+            "query": {
+                "bool": {
+                    "minimum_should_match": 1,
+                    "should": [
+                        self._tasks_nested_query(query, limit),
+                        self._subtasks_nested_query(query, limit),
+                    ],
+                }
+            },
+        }
+        if project_ids:
+            body["query"]["bool"]["filter"] = [
+                {"terms": {"project_id": project_ids}},
+            ]
+
+        print(body)
+        resp = await self.client.search(
+            index=self.index,
+            body=body,
+            request_timeout=self.timeout,
+        )
+
+        hits = resp.get("hits", {}).get("hits", [])
+        print(hits)
+
+        return self.extract_tasks_and_subtasks(hits)
 
     async def create_project(self, project_data: Dict[str, Any]) -> Dict[str, Any]:
         response = await self.client.index(
@@ -70,6 +113,7 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             id=project_data["project_id"],
             document=project_data,
             refresh="wait_for",
+            request_timeout=self.timeout,
         )
         return response
 
@@ -93,38 +137,32 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             if is_index:
                 idx = int(part)
                 if not isinstance(cur, list):
-                    new_list = []
-                    cur.clear()
-                    cur = new_list  # NOTE: см. пояснение ниже
+                    new_list: List[Any] = []
+                    if isinstance(cur, dict):
+                        cur.clear()
+                    cur = new_list
                 cls._ensure_list_size(cur, idx)
                 if is_last:
                     cur[idx] = value
                 else:
                     if cur[idx] is None:
-                        # следующий уровень по умолчанию — dict
                         cur[idx] = {}
                     cur = cur[idx]
             else:
-                # ключ словаря
                 if not isinstance(cur, dict):
-                    # если тут список — это конфликт структур, создаём dict
-                    # и "перезатираем" текущую позицию
-                    # (в нормальных данных такое не должно происходить)
                     cur = {}
                 if is_last:
                     cur[part] = value
                 else:
                     if part not in cur or cur[part] is None:
-                        # по умолчанию следующий уровень — dict
                         cur[part] = {}
-                    # если следующий сегмент — число, то готовим список
                     if (i + 1) < len(parts) and parts[i + 1].isdigit() and not isinstance(cur[part], list):
                         cur[part] = []
                     cur = cur[part]
 
     async def change_project(self, project_id: str, key: str, value: Any) -> Dict[str, Any]:
         try:
-            got = await self.client.get(index=self.index, id=project_id)
+            got = await self.client.get(index=self.index, id=project_id, request_timeout=self.timeout)
         except NotFoundError:
             return {"result": "not_found", "project_id": project_id}
 
@@ -137,8 +175,105 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             id=project_id,
             document=src,
             refresh="wait_for",
+            request_timeout=self.timeout,
         )
         return resp
+
+    def _tasks_nested_query(self, query: str, size: int) -> Dict[str, Any]:
+        return {
+            "nested": {
+                "path": "work_stages.work_kinds.work_types.tasks",
+                "query": self._task_match(query),
+                "inner_hits": {
+                    "name": "task_hits",
+                    "size": size,
+                    "_source": ["task_id", "task_name", "task_description"]
+                },
+            }
+        }
+
+    def _subtasks_nested_query(self, query: str, size: int) -> Dict[str, Any]:
+        return {
+            "nested": {
+                "path": "work_stages.work_kinds.work_types.tasks.subtasks",
+                "query": self._subtask_match(query),
+                "inner_hits": {
+                    "name": "subtask_hits",
+                    "size": size,
+                    "_source": ["subtask_id", "subtask_name", "subtask_description"]
+                },
+            }
+        }
+
+    @staticmethod
+    def _task_match(query: str) -> Dict[str, Any]:
+        return {
+            "multi_match": {
+                "query": query,
+                "type": "phrase_prefix",
+                "fields": [
+                    "work_stages.work_kinds.work_types.tasks.task_name",
+                    "work_stages.work_kinds.work_types.tasks.task_description",
+                ],
+            }
+        }
+
+    @staticmethod
+    def _subtask_match(query: str) -> Dict[str, Any]:
+        return {
+            "multi_match": {
+                "query": query,
+                "type": "phrase_prefix",
+                "fields": [
+                    "work_stages.work_kinds.work_types.tasks.subtasks.subtask_name",
+                    "work_stages.work_kinds.work_types.tasks.subtasks.subtask_description",
+                ],
+            }
+        }
+
+    @staticmethod
+    def extract_tasks_and_subtasks(es_response: List[Dict[str, Any]]):
+        """
+        Обрабатывает ответ от Elasticsearch и возвращает уникальные задачи и подзадачи.
+        Уникальность определяется по всем полям, кроме ID.
+        """
+        tasks = []
+
+        seen = set()
+
+        for hit in es_response:
+            inner_hits = hit.get("inner_hits", {})
+
+            # --- Обработка задач ---
+            task_hits = inner_hits.get("task_hits", {}).get("hits", {}).get("hits", [])
+            for task_hit in task_hits:
+                task_source = task_hit.get("_source", {})
+                if not task_source:
+                    continue
+
+                # Убираем ID для уникальности
+                task_copy = {k: v for k, v in task_source.items() if k != "task_id"}
+                key = json.dumps(task_copy, sort_keys=True, ensure_ascii=False)
+
+                if key not in seen:
+                    seen.add(key)
+                    tasks.append(task_source)
+
+            # --- Обработка подзадач ---
+            subtask_hits = inner_hits.get("subtask_hits", {}).get("hits", {}).get("hits", [])
+            for subtask_hit in subtask_hits:
+                subtask_source = subtask_hit.get("_source", {})
+                if not subtask_source:
+                    continue
+
+                subtask_copy = {k: v for k, v in subtask_source.items() if k != "subtask_id"}
+                key = json.dumps(subtask_copy, sort_keys=True, ensure_ascii=False)
+
+                if key not in seen:
+                    seen.add(key)
+                    tasks.append(subtask_source)
+
+        return tasks
 
 
 @lru_cache

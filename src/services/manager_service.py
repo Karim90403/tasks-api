@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, List, Optional
 
 from fastapi import Depends
 
@@ -12,6 +12,7 @@ from schemas.response.construction import (
     StageWithProject,
     SubtaskShiftEntry,
     TaskShiftEntry,
+    TaskSearchResult,
 )
 
 
@@ -50,6 +51,15 @@ class ManagerService:
         result = response.get("result") or "updated"
         response_project_id = response.get("project_id") or project_id
         return OperationResult(result=result, project_id=response_project_id)
+
+    async def search_tasks(
+        self,
+        name: str,
+        size: int = 20,
+        project_ids: Optional[List[str]] = None,
+    ) -> List[TaskSearchResult]:
+        records = await self.repo.search_tasks(name, size=size, project_ids=project_ids)
+        return [TaskSearchResult.parse_obj(record) for record in records]
 
 
 def get_manager_service(

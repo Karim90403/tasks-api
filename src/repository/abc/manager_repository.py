@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class ABCManagerRepository(ABC):
@@ -13,6 +13,10 @@ class ABCManagerRepository(ABC):
 
     @abstractmethod
     async def get_shift_history(self, project_id: str) -> List[Dict[str, Any]]:
+        ...
+
+    @abstractmethod
+    async def search_tasks(self, name: str, size: int = 20, project_ids: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         ...
 
     @abstractmethod

@@ -2,6 +2,24 @@
 
 PUT construction
 {
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "ru_edge_analyzer": {
+          "tokenizer": "ru_edge_tokenizer",
+          "filter": ["lowercase", "russian_morphology", "russian_stop"]
+        }
+      },
+      "tokenizer": {
+        "ru_edge_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 20,
+          "token_chars": ["letter"]
+        }
+      }
+    }
+  },
   "mappings": {
     "properties": {
       "project_id": { "type": "keyword" },
@@ -10,27 +28,25 @@ PUT construction
         "type": "nested",
         "properties": {
           "stage_id": { "type": "keyword" },
-          "stage_name": { "type": "text" },
+          "stage_name": { "type": "text", "analyzer": "ru_edge_analyzer" },
           "stage_status": { "type": "keyword" },
           "work_kinds": {
             "type": "nested",
             "properties": {
               "work_kind_id": { "type": "keyword" },
-              "work_kind_name": { "type": "text" },
-
+              "work_kind_name": { "type": "text", "analyzer": "ru_edge_analyzer" },
               "work_types": {
                 "type": "nested",
                 "properties": {
                   "work_type_id": { "type": "keyword" },
-                  "work_type_name": { "type": "text" },
+                  "work_type_name": { "type": "text", "analyzer": "ru_edge_analyzer" },
                   "work_type_status": { "type": "keyword" },
-
                   "tasks": {
                     "type": "nested",
                     "properties": {
                       "task_id": { "type": "keyword" },
-                      "task_name": { "type": "text" },
-                      "task_description": { "type": "text" },
+                      "task_name": { "type": "text", "analyzer": "ru_edge_analyzer" },
+                      "task_description": { "type": "text", "analyzer": "ru_edge_analyzer" },
                       "task_status": { "type": "keyword" },
                       "time_intervals": {
                         "type": "nested",
@@ -44,9 +60,9 @@ PUT construction
                         "type": "nested",
                         "properties": {
                           "subtask_id": { "type": "keyword" },
-                          "subtask_name": { "type": "text" },
+                          "subtask_name": { "type": "text", "analyzer": "ru_edge_analyzer" },
+                          "subtask_description": { "type": "text", "analyzer": "ru_edge_analyzer" },
                           "subtask_status": { "type": "keyword" },
-                          "subtask_description": { "type": "text" },
                           "brigade_id": { "type": "keyword" },
                           "brigade_snapshot": {
                             "type": "nested",
@@ -61,7 +77,6 @@ PUT construction
                               }
                             }
                           },
-
                           "deadline": {
                             "type": "nested",
                             "properties": {
@@ -71,6 +86,19 @@ PUT construction
                           },
                           "plannedQty": { "type": "float" },
                           "actualQty": { "type": "float" },
+
+                          "unit": {
+                            "type": "object",
+                            "properties": {
+                              "available_units": {
+                                "type": "keyword"
+                              },
+                              "selected_unit": {
+                                "type": "keyword"
+                              }
+                            }
+                          },
+
                           "machine": {
                             "type": "object",
                             "properties": {
@@ -91,7 +119,6 @@ PUT construction
                   }
                 }
               }
-
             }
           }
         }
@@ -99,6 +126,7 @@ PUT construction
     }
   }
 }
+
 
 
 
