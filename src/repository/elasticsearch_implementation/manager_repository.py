@@ -169,7 +169,8 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
         src = got["_source"]
 
         self._set_by_path(src, key, value)
-
+        if not src:
+            return {"result": "not_found", "project_id": project_id, "key": key}
         resp = await self.client.index(
             index=self.index,
             id=project_id,
@@ -178,6 +179,8 @@ class ElasticManagerRepository(ABCManagerRepository, BaseElasticRepository):
             request_timeout=self.timeout,
         )
         return resp
+
+
 
     def _tasks_nested_query(self, query: str, size: int) -> Dict[str, Any]:
         return {
